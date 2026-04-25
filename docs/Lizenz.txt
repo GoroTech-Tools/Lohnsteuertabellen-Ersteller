@@ -1,0 +1,14 @@
+Lizenz – Lohnsteuertabellen-Ersteller 2026
+==========================================
+
+Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.
+
+Autor: GoroTech
+Stand: April 2026
+
+Diese Software wird ohne jegliche Gewährleistung bereitgestellt.
+Der Autor übernimmt keine Haftung für Schäden, die durch die Nutzung entstehen.
+
+Die berechneten Lohnsteuerwerte basieren auf den BMF-Programmablaufplänen und
+dienen ausschließlich als Orientierungswerte. Für verbindliche Auskünfte
+wenden Sie sich an einen Steuerberater oder das zuständige Finanzamt.

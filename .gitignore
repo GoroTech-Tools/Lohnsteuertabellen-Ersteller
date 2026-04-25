@@ -1,0 +1,24 @@
+# Python cache/bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+
+# Build artifacts
+build/
+dist/
+*.spec.bak
+build_version_info.txt
+
+# Runtime outputs
+debug_log.txt
+*_strukturiert*.xlsx
+
+# Packaged releases
+*.zip
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
