@@ -79,10 +79,10 @@ Detaillierte Rohdaten mit allen Kombinationen:
 
 **Quelle:** BMF Einkommensteuer-Tarifformeln 2026 (§ 32a EStG)
 
-- **Grundfreibetrag:** 12.384 €
+- **Grundfreibetrag:** 12.348 €
 - **Solidaritätszuschlag:** 5,5 % (auf Steuer)
 - **Kirchensteuer:** 9 % (auf Lohnsteuer)
-- **Steuerklassen:** 1–6 mit differenzierten Multiplikatoren
+- **Steuerklassen:** 1–6 mit steuerklassenspezifischer Berechnungslogik (u. a. Splitting/Abzugsregeln)
 - **Kinderfreibeträge:** 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4
 
 ## ✅ Validierungen
@@ -142,7 +142,7 @@ Damit steht für die Verteilung immer ein kompaktes Paket mit Anwendung und Doku
 A: Nein, erlaubt sind nur 3, 5, 10, 50 €. Das verhindert unnötig lange Tabellen.
 
 **F: Welche Steuerklassen werden berücksichtigt?**  
-A: Alle 6 (alleinstehend bis mehrfachbeschäftigung) mit angepassten Tarifmultiplikatoren.
+A: Alle 6 (alleinstehend bis mehrfachbeschäftigung) mit steuerklassenspezifischer Berechnungslogik.
 
 **F: Für welche Jahre gibt es Daten?**  
 A: Derzeit 2026. Weitere Jahre können nach Verfügbarkeit der BMF-Tarifformeln ergänzt werden.
@@ -162,6 +162,10 @@ A: Im Moment nicht. Fenster schließen beendet den Prozess (bei langen Tabellen 
 ## 📄 Lizenz
 
 Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.
+
+## 🗒️ Änderungsstand
+
+- **08.05.2026:** Dokumentation mit Implementierung abgeglichen (Tarifwerte, Steuerklassenlogik, Quellenangaben).
 
 ---
 

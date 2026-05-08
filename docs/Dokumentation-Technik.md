@@ -9,7 +9,7 @@ Lohnsteuertabellen-Ersteller/
 │   ├── tax_table_gui.py                # GUI: Tkinter-Oberfläche
 │   ├── app_icon.ico                    # Anwendungsicon
 │   ├── build_exe.py                    # PyInstaller-Build-Skript
-│   └── requirements.txt                 # Abhängigkeiten
+├── requirements.txt                     # Abhängigkeiten
 ├── docs/
 │   ├── Liesmich.txt                         # Anwender-Dokumentation
 │   ├── Dokumentation-Technik.md            # Diese Datei
@@ -53,7 +53,7 @@ Lohnsteuertabellen-Ersteller/
 ```python
 TAX_PARAMS_2026           # Dict mit Tarifparametern (BMF 2026)
 KFB_VALUES                # Liste: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
-STEUERKLASSE_MULTIPLIKATOREN  # Dict: SK -> Faktor (1.0, 0.5, 1.5, ...)
+AVAILABLE_GENERATORS      # Dict: Jahr -> Generatorfunktion (aktuell 2026)
 ```
 
 #### Funktionen
@@ -147,8 +147,8 @@ _create_table()
   Validiert alle Eingaben, ruft Generator auf.
   Behandelt Fehler mit messagebox.
   
-_open_documentation()
-  Öffnet Technische Dokumentation im Browser/Editor.
+_open_user_manual(), _open_tech_docs()
+  Öffnen Anwender- bzw. Technikdokumentation (embedded oder Dateisystem).
 ```
 
 #### Layout-Struktur
@@ -160,7 +160,7 @@ Row 2: Einkommen min → Entry
 Row 3: Einkommen max → Entry
 Row 4: Ausgabedatei → Entry + Button "Durchsuchen…"
 Row 5: [Buttons] Zurücksetzen | Tabelle erstellen
-Row 6: [Buttons] Hilfe | Dokumentation
+Row 6: [Buttons] Anwender-Hilfe | Technische Doku
 Row 7: Status-Label
 ```
 
@@ -179,32 +179,36 @@ Output:   Path-Konvertierung, Verzeichnis-Erstellung
 
 ## 🧮 Tariflogik
 
-### Tarifzonen (2026)
+### Tarifzonen (2026, gemäß Implementierung)
 
 ```text
-Zone 1: Grundfreibetrag (12.384 €) < y ≤ 16.704 €
-        Formel: (a*z + b*10000) * z, mit z = (y - gb) / 10000
+Zone 1: zvE ≤ 12.348 €
+  S = 0
 
-Zone 2: 16.704 € < y ≤ 66.760 €
-        Formel: (a + b*10000*z) * z + 1038.90
+Zone 2: 12.349 € – 17.799 €
+  S = (914,51 · y + 1.400) · y
+  y = (zvE - 12.348) / 10.000
 
-Zone 3: 66.760 € < y ≤ 287.000 €
-        Formel: a + (y - gb2) * b (42% Satz)
+Zone 3: 17.800 € – 69.878 €
+  S = (173,10 · z + 2.397) · z + 1.034,87
+  z = (zvE - 17.799) / 10.000
 
-Zone 4: y > 287.000 €
-        Spitzensteuersatz (45%)
+Zone 4: 69.879 € – 277.825 €
+  S = 0,42 · x - 11.135,63
+
+Zone 5: ab 277.826 €
+  S = 0,45 · x - 19.470,38
 ```
 
-### Steuerklassen-Multiplikatoren
+### Steuerklassen-Logik (ohne Multiplikator-Modell)
 
-| SK | Name | Multiplikator | Anmerkung |
-| --- | --- | --- | --- |
-| 1 | Alleinstehend | 1.0 | Standard |
-| 2 | Alleinerziehend | 1.0 | wie SK 1 |
-| 3 | Verheiratet (höheres EK) | 0.5 | Ehegattensplitting |
-| 4 | Verheiratet (ähnlich) | 1.0 | beide ~gleich |
-| 5 | Verheiratet (niedriges EK) | 1.5 | Faktor erhöht |
-| 6 | Mehrfachbeschäftigung | 1.0 | Nebeneinnahmen |
+| SK | Umgesetzte Logik |
+| --- | --- |
+| 1/4 | Grundtarif mit AN-Pauschbetrag, Sonderausgaben-Pauschbetrag und Vorsorgepauschale |
+| 2 | Wie SK 1/4, zusätzlich Entlastungsbetrag für Alleinerziehende |
+| 3 | Ehegattensplitting: $2 \times$ Grundtarif($zvE/2$) |
+| 5 | Kein GFB/kein AN-Pauschbetrag; Berechnung über $zvE +$ Grundfreibetrag |
+| 6 | Wie SK 5, zusätzlich ohne Vorsorgepauschale |
 
 ### Kinderfreibetrag (KFB)
 
@@ -255,7 +259,7 @@ cd src
 python build_exe.py
 ```
 
-### Abhängigkeiten (src/requirements.txt)
+### Abhängigkeiten (requirements.txt im Projektroot)
 
 ```text
 pandas>=1.3.0
@@ -268,7 +272,7 @@ pyinstaller-hooks-contrib>=2022.0
 
 ```bash
 # 1. Abhängigkeiten installieren
-pip install -r src/requirements.txt
+pip install -r requirements.txt
 
 # 2. Build ausführen
 cd src
@@ -458,11 +462,113 @@ Entwickler können eigene EXE bauen oder im Python-Modus arbeiten.
 
 ---
 
+## 📅 Anpassung für ein neues Steuerjahr (2027 ff.)
+
+Wenn das BMF den Programmablaufplan für ein neues Jahr veröffentlicht (üblicherweise im November des Vorjahres unter [bundesfinanzministerium.de](https://www.bundesfinanzministerium.de)), sind folgende Schritte erforderlich.
+
+### Schritt 1 – Neue Tarifparameter ermitteln
+
+Aus dem BMF-Programmablaufplan des neuen Jahres folgende Werte ablesen:
+
+| Parameter | Wo im PAP | Beispiel 2026 |
+| --------- | --------- | ------------- |
+| `grundfreibetrag` | § 32a-Tarifzonen, Grenze Zone 1 | 12.348 € |
+| `grenze_zone2` | Obergrenze 1. Progressionszone | 17.799 € |
+| `grenze_zone3` | Obergrenze 2. Progressionszone | 69.878 € |
+| `grenze_zone4` | Obergrenze Proportionalzone 42 % | 277.825 € |
+| `zone2_a`, `zone2_b` | Koeffizienten 1. Progressionszone | 914,51 / 1.400,00 |
+| `zone3_a`, `zone3_b`, `zone3_T1` | Koeffizienten 2. Progressionszone | 173,10 / 2.397,00 / 1.034,87 |
+| `zone4_rate`, `zone4_offset` | 42 %-Proportionalzone | 0,42 / 11.135,63 |
+| `zone5_rate`, `zone5_offset` | 45 %-Spitzenzone | 0,45 / 19.470,38 |
+| `arbeitnehmer_pauschbetrag` | § 9a EStG | 1.230 € |
+| `sonderausgaben_pauschbetrag` | § 10c EStG | 36 € |
+| `entlastungsbetrag_alleinerziehend` | § 24b EStG | 4.260 € |
+| `rv_an_satz`, `bbg_rv` | SV-Rechengrößen-VO | 9,30 % / 89.400 € |
+| `kv_an_satz`, `pv_an_satz`, `bbg_kv` | GKV-Beitragssatz / SV-Rechengrößen | 8,15 % / 1,80 % / 66.150 € |
+
+> **Tipp:** Die KV-Zusatzbeitragssätze variieren je Kasse. Im vereinfachten Modell wird ein mittlerer Zusatzbeitrag (~1,6 %) auf den halbierten Basissatz addiert. Den aktuellen Durchschnittswert veröffentlicht das BMG jährlich.
+
+### Schritt 2 – Neues Generator-Modul anlegen
+
+```bash
+# Vorlage kopieren
+copy src\generate_2026_tax_table.py src\generate_2027_tax_table.py
+```
+
+In `src/generate_2027_tax_table.py` ersetzen:
+
+1. Den Dict-Namen `TAX_PARAMS_2026` → `TAX_PARAMS_2027` (alle Vorkommen).
+2. Alle Parameterwerte im Dict durch die neuen BMF-Werte aus Schritt 1.
+3. Den Funktionsnamen `_grundtarif_2026` → `_grundtarif_2027` (alle Vorkommen).
+4. Den Funktionsnamen `generate_2026_tax_table` → `generate_2027_tax_table` (alle Vorkommen).
+5. Den Docstring/Kommentar-Jahrgang im Kopf der Datei.
+
+### Schritt 3 – GUI einbinden
+
+In `src/tax_table_gui.py` drei Änderungen vornehmen:
+
+```python
+# 1. Import ergänzen
+from generate_2027_tax_table import (
+    generate_2027_tax_table,
+    build_wide_dataframe,
+    write_excel_file,
+)
+
+# 2. Wrapper-Funktion hinzufügen (analog zu generate_for_2026)
+def generate_for_2027(output_path: Path, step: int, income_min: float, income_max: float) -> None:
+    """Erzeugt die 2027er-Tabelle und schreibt sie als Excel-Datei."""
+    raw_df = generate_2027_tax_table(step=step, income_min=income_min, income_max=income_max)
+    wide_df = build_wide_dataframe(raw_df)
+    write_excel_file(output_path, wide_df, raw_df,
+                     main_sheet="Lohnsteuer 2027", raw_sheet="Rohdaten 2027")
+
+# 3. Neues Jahr in AVAILABLE_GENERATORS eintragen und DEFAULT_YEAR aktualisieren
+AVAILABLE_GENERATORS: Dict[int, GeneratorFn] = {
+    2026: generate_for_2026,
+    2027: generate_for_2027,   # neu
+}
+DEFAULT_YEAR = "2027"
+```
+
+### Schritt 4 – Kalkulationsdokumentation aktualisieren
+
+In `docs/Dokumentation-Kalkulation.md` den Kopfbereich anpassen:
+
+```markdown
+**Rechtsgrundlage:** § 32a EStG in der Fassung ab Veranlagungszeitraum 2027
+**Quelle Tarifformeln:** BMF-Programmablaufplan 2027 (Anlage 2), veröffentlicht …
+**Gültig ab:** 1. Januar 2027
+```
+
+Alle Zahlenwerte in den Tabellen (Tarifzonen, Vorsorgepauschale, Freibeträge) durch die neuen Werte ersetzen.
+
+### Schritt 5 – EXE neu bauen
+
+```bash
+cd src
+python build_exe.py
+```
+
+Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Dokumentation.
+
+### Checkliste
+
+- [ ] BMF-PAP für neues Jahr heruntergeladen und Werte abgelesen
+- [ ] `src/generate_<YYYY>_tax_table.py` angelegt und alle Parameter aktualisiert
+- [ ] `tax_table_gui.py` – Import, Wrapper-Funktion und `AVAILABLE_GENERATORS` ergänzt
+- [ ] `DEFAULT_YEAR` auf neues Jahr gesetzt
+- [ ] `docs/Dokumentation-Kalkulation.md` – Zahlenwerte aktualisiert
+- [ ] Plausibilitätsprüfung: Ergebnis für ein Beispiel-Einkommen gegen BMF-Tabelle oder [bmf-steuerrechner.de](https://www.bmf-steuerrechner.de) geprüft
+- [ ] EXE neu gebaut und Release-ZIP erstellt
+
+---
+
 ## 📝 Erweiterungen & Roadmap
 
 ### Geplant
 
-1. **Weitere Jahrgänge:** Wenn BMF-Formeln verfügbar (z.B. 2025, 2027)
+1. **Weitere Jahrgänge:** Wenn BMF-Formeln verfügbar (z.B. 2027 f.)
 2. **Fortschrittsanzeige:** Bei längeren Generierungen
 3. **Export-Formate:** CSV, JSON zusätzlich zu Excel
 4. **Historische Vergleiche:** Mehrere Jahre in einer Datei
@@ -479,7 +585,7 @@ Entwickler können eigene EXE bauen oder im Python-Modus arbeiten.
 
 ## 🐛 Bekannte Limitierungen
 
-1. **Vereinfachte Steuerklassen-Multiplikatoren:** Vereinfachung, nicht 100% amtlich
+1. **Steuerklassenlogik vereinfacht:** Orientierung am Grundtarif mit praxisnahen Sonderregeln (Splitting, SK5/SK6-Anpassungen)
 2. **KFB-Modell:** Linear vereinfacht (50 €/KFB), nicht alle Feinheiten
 3. **Keine Lohn-Grenzen:** Z.B. Mindestlohn, Gleitzone nicht berücksichtigt
 4. **GUI Single-Thread:** Lange Generierungen können UI einfrieren (60+ Sek)
@@ -489,15 +595,19 @@ Entwickler können eigene EXE bauen oder im Python-Modus arbeiten.
 
 ## 📚 Referenzen
 
-- **BMF Einkommensteuer-Tarifformeln 2026:** [Bundesfinanzhof](https://www.bundesfinanzhof.de/)
+- **BMF Einkommensteuer-Tarifformeln 2026:** [Bundesfinanzministerium](https://www.bundesfinanzministerium.de/)
 - **§ 32a EStG:** Einkommensteuergesetz
 - **pandas Dokumentation:** [pandas.pydata.org](https://pandas.pydata.org/)
 - **Tkinter Dokumentation:** [docs.python.org](https://docs.python.org/3/library/tkinter.html)
 
+## 🗒️ Änderungsstand
+
+- **08.05.2026:** Dokumentation mit Implementierung abgeglichen (Tarifwerte, Steuerklassenlogik, Quellenangaben).
+
 ---
 
-**Version:** 1.0.26115.19430  
-**Stand:** 25.04.2026  
+**Version:** 1.0.0  
+**Stand:** 07.05.2026  
 **Autor:** GoroTech  
 **Lizenz:** Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.  
 **Zielentwickler:** Python 3.8+
