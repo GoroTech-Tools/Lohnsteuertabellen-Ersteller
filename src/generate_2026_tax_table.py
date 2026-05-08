@@ -50,8 +50,12 @@ TAX_PARAMS_2026 = {
     "zone5_rate":    0.45,
     "zone5_offset": 19470.38,
 
-    # Solidaritätszuschlag
-    "solidarity_rate": 0.055,
+    # Solidaritätszuschlag (§ 4 SolZG 1995)
+    "solidarity_rate":          0.055,   # 5,5 % der Lohnsteuer
+    "solidarity_milderung":     0.119,   # Milderungszone: max. 11,9 % des Übersteigungsbetrags
+    # Freigrenze § 3 Abs. 3 SolZG 1995 (Jahres-Lohnsteuer)
+    "solz_freigrenze_einzel":  20350,   # SK I, II, IV, V, VI
+    "solz_freigrenze_splitting": 40700,  # SK III (Ehegattensplitting)
 
     # Pauschbeträge für Arbeitnehmer
     "arbeitnehmer_pauschbetrag":        1230,  # § 9a Satz 1 Nr. 1a EStG
@@ -134,7 +138,17 @@ def calculate_annual_tax(annual_income: float, tax_class: int) -> Tuple[float, f
         tax = _grundtarif_2026(zvE)
 
     tax = max(0.0, round(tax))
-    solidarity = round(tax * p["solidarity_rate"], 2)
+
+    # Solidaritätszuschlag mit Freigrenze und Milderungszone (§ 3 Abs. 3, § 4 SolZG 1995)
+    # Freigrenze: doppelt für SK III (Splitting), einfach für alle anderen SK
+    freigrenze = p["solz_freigrenze_splitting"] if tax_class == 3 else p["solz_freigrenze_einzel"]
+    if tax <= freigrenze:
+        solidarity = 0.0
+    else:
+        full_solz = p["solidarity_rate"] * tax
+        milderung_solz = p["solidarity_milderung"] * (tax - freigrenze)
+        solidarity = round(min(full_solz, milderung_solz), 2)
+
     return tax, solidarity
 
 

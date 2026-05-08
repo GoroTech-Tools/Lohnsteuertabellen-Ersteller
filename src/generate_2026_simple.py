@@ -33,7 +33,11 @@ TAX_PARAMS_2026 = {
     # Zone 5: 0,45 · x − 19.470,38
     "zone5_rate":    0.45,
     "zone5_offset": 19470.38,
-    "solidarity_rate": 0.055,
+    "solidarity_rate":           0.055,   # 5,5 % der Lohnsteuer
+    "solidarity_milderung":      0.119,   # Milderungszone § 4 SolZG: max. 11,9 % des Übersteigungsbetrags
+    # Freigrenze § 3 Abs. 3 SolZG 1995 (Jahres-Lohnsteuer)
+    "solz_freigrenze_einzel":   20350,   # SK I, II, IV, V, VI
+    "solz_freigrenze_splitting": 40700,   # SK III (Ehegattensplitting)
     # Pauschbeträge
     "arbeitnehmer_pauschbetrag":        1230,
     "sonderausgaben_pauschbetrag":        36,
@@ -102,7 +106,16 @@ def calculate_monthly_tax(monthly_income: float, tax_class: int) -> tuple:
 
     annual_tax = max(0.0, round(annual_tax))
     monthly_tax = round(annual_tax / 12, 2)
-    monthly_solidarity = round(monthly_tax * p["solidarity_rate"], 2)
+
+    # Solidaritätszuschlag mit Freigrenze und Milderungszone (§ 3 Abs. 3, § 4 SolZG 1995)
+    freigrenze = p["solz_freigrenze_splitting"] if tax_class == 3 else p["solz_freigrenze_einzel"]
+    if annual_tax <= freigrenze:
+        monthly_solidarity = 0.0
+    else:
+        full_solz = p["solidarity_rate"] * annual_tax
+        milderung_solz = p["solidarity_milderung"] * (annual_tax - freigrenze)
+        monthly_solidarity = round(min(full_solz, milderung_solz) / 12, 2)
+
     return monthly_tax, monthly_solidarity
 
 
@@ -162,7 +175,7 @@ def generate_excel_table():
                 kfb_reduction = kfb * 50  # 1 KFB ≈ 50€/Monat (vereinfacht)
                 adjusted_income = max(0, income - kfb_reduction)
                 
-                solz, _ = calculate_monthly_tax(adjusted_income, tax_class)
+                _, solz = calculate_monthly_tax(adjusted_income, tax_class)
                 kist = round(lohnsteuer * 0.09, 2)  # 9% Kirchensteuer
                 
                 ws_main.cell(row=row, column=col_idx).value = solz
@@ -201,7 +214,7 @@ def generate_excel_table():
                 adjusted_income = max(0, income - kfb_reduction)
                 
                 lohnsteuer, solz = calculate_monthly_tax(income, tax_class)
-                solz_adjusted, _ = calculate_monthly_tax(adjusted_income, tax_class)
+                _, solz_adjusted = calculate_monthly_tax(adjusted_income, tax_class)
                 kist = round(lohnsteuer * 0.09, 2)
                 
                 ws_raw.cell(row=row, column=1).value = page

@@ -100,11 +100,50 @@ Bei einer Zweitbeschäftigung (SK 6) führt der Hauptarbeitgeber die Sozialversi
 
 ## 5. Solidaritätszuschlag
 
+**Rechtsgrundlagen:** § 3 Abs. 3, Abs. 4 SolZG 1995; § 4 SolZG 1995
+
+### Freigrenze (§ 3 Abs. 3 SolZG 1995)
+
+Der SolZ wird nur erhoben, wenn die Jahres-Lohnsteuer (Bemessungsgrundlage) die folgende Freigrenze übersteigt:
+
+| Steuerklasse | Freigrenze (Jahres-Lohnsteuer) |
+| ------------ | ------------------------------ |
+| I, II, IV, V, VI | **20.350 €** |
+| III (Ehegattensplitting) | **40.700 €** |
+
+Für die monatliche Lohnabrechnung gilt je 1/12 dieser Beträge (SK I–II, IV–VI: **1.695,83 €/Monat**, SK III: **3.391,67 €/Monat**).
+
+### Berechnung (§ 4 SolZG 1995)
+
 ```text
-SolZ = Lohnsteuer × 5,5 %
+Wenn Lohnsteuer_Jahresbetrag ≤ Freigrenze:
+    SolZ = 0
+
+Sonst (Milderungszone / voller SolZ):
+    SolZ = min(
+        5,5 % × Lohnsteuer,                          ← voller Zuschlagsatz
+        11,9 % × (Lohnsteuer − Freigrenze)           ← Milderungszone
+    )
 ```
 
-Freigrenze und Milderungszone werden in diesem Modell nicht berücksichtigt (vereinfachend). In der Praxis entfällt der SolZ für die meisten Steuerpflichtigen mit geringem und mittlerem Einkommen vollständig.
+Die **Milderungszone** stellt sicher, dass der Einstieg in den SolZ gleitend erfolgt und kein Sprung-Effekt entsteht. Die Milderungszone endet, sobald beide Formeln gleich sind:
+
+$$L^* = \frac{0{,}119}{0{,}119 - 0{,}055} \times F_\text{Freigrenze} \approx 1{,}859 \times F_\text{Freigrenze}$$
+
+| SK | Freigrenze | Voller SolZ ab Jahres-Lohnsteuer |
+| -- | ---------- | -------------------------------- |
+| I, II, IV–VI | 20.350 € | ≈ 37.841 € |
+| III | 40.700 € | ≈ 75.681 € |
+
+### Praxiswerte (Näherung, SK I/West 2026)
+
+| Bruttoentgelt/Monat | Jahres-Lohnsteuer (ca.) | SolZ |
+| ------------------- | ----------------------- | ---- |
+| ≤ ca. 6.700 €       | < 20.350 €              | **0 €** |
+| ca. 6.700–9.800 € | 20.350–37.841 € | Milderungszone |
+| > ca. 9.800 €       | > 37.841 €              | 5,5 % der Lohnsteuer |
+
+> **Hinweis SK VI:** Aufgrund der fehlenden Freibeträge gilt der SolZ für SK VI bereits ab ca. 4.800 €/Monat Bruttoentgelt.
 
 ---
 
@@ -147,7 +186,7 @@ Tatsächlich wird der Kinderfreibetrag (je Kind: 6.672 €/Jahr für beide Elter
 | Vereinfachung | Auswirkung |
 | ------------- | ---------- |
 | Vorsorgepauschale: direkte AN-Beitragssumme statt vollständigem BMF-PAP | Geringe Abweichung bei Grenzeinkommen; unterschätzt i. d. R. die VSP leicht |
-| SolZ ohne Freigrenze/Milderungszone | SolZ wird bei niedrigen Einkommen ggf. zu hoch ausgewiesen |
+| SolZ mit Freigrenze (20.350 €/40.700 €) und Milderungszone (11,9 %) | Korrekte Umsetzung gemäß §§ 3, 4 SolZG 1995; für die meisten AN entfällt der SolZ vollständig |
 | KFB als pauschale Einkommensminderung | Nur Näherungswert; echte Günstigerprüfung erfolgt im Jahresausgleich |
 | Kirchensteuer einheitlich 9 % | In Bayern und BW gilt 8 %; keine individuelle Konfessionsauswahl |
 | Keine Berücksichtigung von Altersentlastungsbetrag, Versorgungsfreibetrag etc. | Tabelle gilt für reguläre Arbeitnehmer ohne Versorgungsbezüge |

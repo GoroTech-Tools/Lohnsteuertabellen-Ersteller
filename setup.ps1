@@ -6,6 +6,35 @@ param([switch]$Force)
 $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Leaf
 
+# Python-Interpreter ermitteln (python oder py -3)
+$pythonCmd = $null
+
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    try {
+        & python -V *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $pythonCmd = @("python")
+        }
+    } catch {
+        # Ignorieren und auf py -3 prüfen
+    }
+}
+
+if (-not $pythonCmd -and (Get-Command py -ErrorAction SilentlyContinue)) {
+    try {
+        & py -3 -V *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $pythonCmd = @("py", "-3")
+        }
+    } catch {
+        # wird unten abgefangen
+    }
+}
+
+if (-not $pythonCmd) {
+    throw "Weder ein lauffähiges 'python' noch 'py -3' wurde gefunden. Bitte Python installieren oder PATH/App-Ausführungsalias prüfen."
+}
+
 if ($Force -and (Test-Path ".\.venv")) {
     Write-Host "[$repo] Entferne bestehende .venv ..."
     Remove-Item ".\.venv" -Recurse -Force
@@ -13,7 +42,11 @@ if ($Force -and (Test-Path ".\.venv")) {
 
 if (-not (Test-Path ".\.venv")) {
     Write-Host "[$repo] Erstelle .venv ..."
-    python -m venv .venv
+    if ($pythonCmd.Length -eq 1) {
+        & $pythonCmd[0] -m venv .venv
+    } else {
+        & $pythonCmd[0] $pythonCmd[1] -m venv .venv
+    }
 } else {
     Write-Host "[$repo] .venv bereits vorhanden."
 }
