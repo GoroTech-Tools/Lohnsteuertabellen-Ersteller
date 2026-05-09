@@ -4,7 +4,7 @@ Generiert eine Lohnsteuertabelle für 2026 basierend auf den gültigen Tarifpara
 Berechnet Lohnsteuer, Solidaritätszuschlag und Kirchensteuer für alle Steuerklassen.
 
 Nutzung:
-    python generate_2026_tax_table.py -o "Lohnsteuer_2026_West.xlsx"
+    python generate_2026_tax_table.py -o "Lohnsteuer_2026_West_monatlich.xlsx"
 
 Parameter:
     - Einkommensbereiche: 1000 - 10000€
@@ -16,89 +16,39 @@ Parameter:
 """
 
 import argparse
-import math
 import pandas as pd
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
-from datetime import datetime
 import sys
 
-# ===================== 2026 TARIFPARAMETER =====================
-# Quelle: § 32a Abs. 1 EStG, Fassung ab Veranlagungszeitraum 2026
-TAX_PARAMS_2026 = {
-    # Tarifzonen § 32a EStG 2026
-    "grundfreibetrag":  12348,   # Zone 1 bis hier: 0 € Steuer
-    "grenze_zone2":     17799,   # Zone 2: 12.349–17.799 €
-    "grenze_zone3":     69878,   # Zone 3: 17.800–69.878 €
-    "grenze_zone4":    277825,   # Zone 4: 69.879–277.825 €
-                                 # Zone 5: ab 277.826 €
+from tax_data_2026 import KFB_VALUES_2026, TAX_PARAMS_2026
+from tax_engine import (
+    calculate_annual_tax_for_year,
+    calculate_church_tax as calculate_church_tax_generic,
+    calculate_monthly_tax_for_year,
+    generate_tax_records_for_year,
+    grundtarif,
+    vorsorgepauschale,
+)
+from tax_year_config import (
+    TAX_YEAR,
+    get_generation_title,
+    get_output_filename,
+    get_sheet_names,
+)
 
-    # Zone 2: (914,51 · y + 1.400) · y
-    "zone2_a":   914.51,
-    "zone2_b":  1400.0,
-
-    # Zone 3: (173,10 · z + 2.397) · z + 1.034,87
-    "zone3_a":   173.10,
-    "zone3_b":  2397.0,
-    "zone3_T1": 1034.87,
-
-    # Zone 4: 0,42 · x − 11.135,63
-    "zone4_rate":    0.42,
-    "zone4_offset": 11135.63,
-
-    # Zone 5: 0,45 · x − 19.470,38
-    "zone5_rate":    0.45,
-    "zone5_offset": 19470.38,
-
-    # Solidaritätszuschlag (§ 4 SolZG 1995)
-    "solidarity_rate":          0.055,   # 5,5 % der Lohnsteuer
-    "solidarity_milderung":     0.119,   # Milderungszone: max. 11,9 % des Übersteigungsbetrags
-    # Freigrenze § 3 Abs. 3 SolZG 1995 (Jahres-Lohnsteuer)
-    "solz_freigrenze_einzel":  20350,   # SK I, II, IV, V, VI
-    "solz_freigrenze_splitting": 40700,  # SK III (Ehegattensplitting)
-
-    # Pauschbeträge für Arbeitnehmer
-    "arbeitnehmer_pauschbetrag":        1230,  # § 9a Satz 1 Nr. 1a EStG
-    "sonderausgaben_pauschbetrag":        36,  # § 10c EStG
-    "entlastungsbetrag_alleinerziehend": 4260,  # § 24b EStG (SK 2)
-
-    # Sozialversicherungs-Beitragssätze (Arbeitnehmeranteil, West 2026)
-    "rv_an_satz":  0.0930,   # Rentenversicherung 9,3 %
-    "kv_an_satz":  0.0815,   # Krankenversicherung inkl. Zusatzbeitrag ~8,15 %
-    "pv_an_satz":  0.0180,   # Pflegeversicherung 1,8 %
-    "bbg_rv":     89400,     # Beitragsbemessungsgrenze RV
-    "bbg_kv":     66150,     # Beitragsbemessungsgrenze KV/PV
-}
-
-KFB_VALUES = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
+KFB_VALUES = KFB_VALUES_2026
 
 # ===================== BERECHNUNGSFUNKTIONEN =====================
 
 def _grundtarif_2026(zvE: float) -> float:
     """§ 32a Abs. 1 EStG 2026 – Grundtarif (Grundfreibetrag bereits enthalten)."""
-    p = TAX_PARAMS_2026
-    zvE = int(zvE)  # auf vollen Euro abrunden
-    if zvE <= p["grundfreibetrag"]:
-        return 0.0
-    elif zvE <= p["grenze_zone2"]:
-        y = (zvE - p["grundfreibetrag"]) / 10000
-        return (p["zone2_a"] * y + p["zone2_b"]) * y
-    elif zvE <= p["grenze_zone3"]:
-        z = (zvE - p["grenze_zone2"]) / 10000
-        return (p["zone3_a"] * z + p["zone3_b"]) * z + p["zone3_T1"]
-    elif zvE <= p["grenze_zone4"]:
-        return p["zone4_rate"] * zvE - p["zone4_offset"]
-    else:
-        return p["zone5_rate"] * zvE - p["zone5_offset"]
+    return grundtarif(zvE, TAX_PARAMS_2026)
 
 
 def _vorsorgepauschale(annual_gross: float) -> float:
     """Vereinfachte Vorsorgepauschale für GKV-Arbeitnehmer (West, 2026)."""
-    p = TAX_PARAMS_2026
-    rv = min(annual_gross, p["bbg_rv"]) * p["rv_an_satz"]
-    kv = min(annual_gross, p["bbg_kv"]) * p["kv_an_satz"]
-    pv = min(annual_gross, p["bbg_kv"]) * p["pv_an_satz"]
-    return rv + kv + pv
+    return vorsorgepauschale(annual_gross, TAX_PARAMS_2026)
 
 
 def calculate_annual_tax(annual_income: float, tax_class: int) -> Tuple[float, float]:
@@ -109,67 +59,21 @@ def calculate_annual_tax(annual_income: float, tax_class: int) -> Tuple[float, f
     Berücksichtigt Arbeitnehmer-Pauschbetrag, Sonderausgaben-Pauschbetrag,
     vereinfachte Vorsorgepauschale und Steuerklassen-spezifische Regelungen.
     """
-    p = TAX_PARAMS_2026
-    ap = p["arbeitnehmer_pauschbetrag"]
-    so = p["sonderausgaben_pauschbetrag"]
-    vorsorge = _vorsorgepauschale(annual_income)
-
-    if tax_class == 3:
-        # Ehegattensplitting: § 32a Abs. 5 EStG
-        zvE = max(0.0, annual_income - ap - so - vorsorge)
-        tax = 2.0 * _grundtarif_2026(zvE / 2)
-    elif tax_class == 2:
-        # Alleinerziehend: Entlastungsbetrag § 24b EStG
-        entlastung = p["entlastungsbetrag_alleinerziehend"]
-        zvE = max(0.0, annual_income - ap - so - vorsorge - entlastung)
-        tax = _grundtarif_2026(zvE)
-    elif tax_class == 5:
-        # SK5: kein GFB, kein AN-Pauschbetrag, aber Vorsorgepauschale
-        zvE = max(0.0, annual_income - so - vorsorge)
-        tax = _grundtarif_2026(zvE + p["grundfreibetrag"])
-    elif tax_class == 6:
-        # SK6 (Zweitjob): kein GFB, kein AN-Pauschbetrag, KEINE Vorsorgepauschale
-        # (VSP = 0 im BMF-PAP, da SV-Beiträge beim Hauptarbeitgeber abgeführt)
-        zvE = max(0.0, annual_income - so)
-        tax = _grundtarif_2026(zvE + p["grundfreibetrag"])
-    else:
-        # SK 1, 4: Standard-Grundtarif
-        zvE = max(0.0, annual_income - ap - so - vorsorge)
-        tax = _grundtarif_2026(zvE)
-
-    tax = max(0.0, round(tax))
-
-    # Solidaritätszuschlag mit Freigrenze und Milderungszone (§ 3 Abs. 3, § 4 SolZG 1995)
-    # Freigrenze: doppelt für SK III (Splitting), einfach für alle anderen SK
-    freigrenze = p["solz_freigrenze_splitting"] if tax_class == 3 else p["solz_freigrenze_einzel"]
-    if tax <= freigrenze:
-        solidarity = 0.0
-    else:
-        full_solz = p["solidarity_rate"] * tax
-        milderung_solz = p["solidarity_milderung"] * (tax - freigrenze)
-        solidarity = round(min(full_solz, milderung_solz), 2)
-
-    return tax, solidarity
+    return calculate_annual_tax_for_year(annual_income, tax_class, TAX_PARAMS_2026)
 
 
 def calculate_monthly_tax(monthly_income: float, tax_class: int) -> Tuple[float, float]:
     """
     Berechnet die monatliche Lohnsteuer basierend auf Jahreseinkommen.
     """
-    annual_income = monthly_income * 12
-    annual_tax, annual_solidarity = calculate_annual_tax(annual_income, tax_class)
-    
-    monthly_tax = annual_tax / 12
-    monthly_solidarity = annual_solidarity / 12
-    
-    return monthly_tax, monthly_solidarity
+    return calculate_monthly_tax_for_year(monthly_income, tax_class, TAX_PARAMS_2026)
 
 
 def calculate_church_tax(lohnsteuer: float) -> float:
     """
     Berechnet die Kirchensteuer als 9% der Lohnsteuer.
     """
-    return lohnsteuer * 0.09
+    return calculate_church_tax_generic(lohnsteuer)
 
 
 def generate_tax_records(
@@ -183,32 +87,7 @@ def generate_tax_records(
     
     Mit Kinderfreibetrag wird ein reduziertes zu versteuerndes Einkommen angerechnet.
     """
-    records = []
-    
-    # Berechnung ohne KFB
-    lohnsteuer_base, solz_base = calculate_monthly_tax(monthly_income, tax_class)
-    
-    for kfb in kfb_values:
-        # Mit KFB wird ein gewisser Betrag vom Einkommen abgezogen
-        # KFB 1 = 100€ pro Monat (2.400€ jährlich / 24 KFB-Halte)
-        # Vereinfachung: KFB reduziert das Einkommen direkt
-        kfb_monthly_reduction = kfb * 50  # Vereinfachte Annahme: 1 KFB = 50€/Monat
-        adjusted_income = max(0, monthly_income - kfb_monthly_reduction)
-        
-        lohnsteuer, solz = calculate_monthly_tax(adjusted_income, tax_class)
-        kist = calculate_church_tax(lohnsteuer)
-        
-        record = {
-            "Einkommen_EUR": monthly_income,
-            "Steuerklasse": tax_class,
-            "Kinderfreibetrag": kfb,
-            "Lohnsteuer": round(lohnsteuer, 2),
-            "SolZ": round(solz, 2),
-            "Kirchensteuer_9%": round(kist, 2),
-        }
-        records.append(record)
-    
-    return records
+    return generate_tax_records_for_year(monthly_income, tax_class, kfb_values, TAX_PARAMS_2026)
 
 
 def generate_2026_tax_table(
@@ -241,6 +120,23 @@ def generate_2026_tax_table(
     # Spalten sortieren
     return df[["Einkommen_EUR", "Steuerklasse", "Kinderfreibetrag", 
                "Lohnsteuer", "SolZ", "Kirchensteuer_9%"]]
+
+
+def generate_tax_table(
+    income_min: float = 1000,
+    income_max: float = 10000,
+    step: float = 5,
+    tax_classes: Optional[List[int]] = None,
+    kfb_values: Optional[List[float]] = None,
+) -> pd.DataFrame:
+    """Generischer Alias für das aktuell unterstützte Steuerjahr."""
+    return generate_2026_tax_table(
+        income_min=income_min,
+        income_max=income_max,
+        step=step,
+        tax_classes=tax_classes,
+        kfb_values=kfb_values,
+    )
 
 
 def build_wide_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -282,12 +178,17 @@ def write_excel_file(
     output_path: Path,
     wide_df: pd.DataFrame,
     raw_df: pd.DataFrame,
-    main_sheet: str = "Tabelle",
-    raw_sheet: str = "Tabelle_Rohdaten",
+    year: int = TAX_YEAR,
+    main_sheet: Optional[str] = None,
+    raw_sheet: Optional[str] = None,
 ) -> None:
     """
     Schreibt die Excel-Datei mit Hauptblatt und Rohdatenblatt.
     """
+    default_main_sheet, default_raw_sheet = get_sheet_names(year)
+    main_sheet = main_sheet or default_main_sheet
+    raw_sheet = raw_sheet or default_raw_sheet
+
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         wide_df.to_excel(writer, sheet_name=main_sheet, index=False)
         raw_df.to_excel(writer, sheet_name=raw_sheet, index=False)
@@ -297,12 +198,12 @@ def write_excel_file(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generiert eine Lohnsteuertabelle für 2026"
+        description=f"Generiert eine Lohnsteuertabelle für {TAX_YEAR}"
     )
     parser.add_argument(
         "-o", "--output",
         type=str,
-        default="Lohnsteuer_2026_West_monatlich.xlsx",
+        default=get_output_filename(TAX_YEAR),
         help="Pfad zur Ausgabe-Excel-Datei"
     )
     parser.add_argument(
@@ -327,7 +228,7 @@ def main():
     args = parser.parse_args()
     
     print("=" * 70)
-    print("GENERIERUNG LOHNSTEUERTABELLE 2026")
+    print(get_generation_title(TAX_YEAR))
     print("=" * 70)
     print(f"Einkommensbereiche: {args.income_min}€ - {args.income_max}€")
     print(f"Schrittweite: {args.step}€")
@@ -354,7 +255,7 @@ def main():
     
     print()
     print("Schreibe Excel-Datei...")
-    write_excel_file(output_path, wide_df, raw_df)
+    write_excel_file(output_path, wide_df, raw_df, year=TAX_YEAR)
     
     print()
     print("=" * 70)

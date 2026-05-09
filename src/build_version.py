@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
 """Automatisch erzeugt durch build_exe.py - nicht manuell bearbeiten."""
 
-APP_VERSION = "1.0.0"
-BUILD_STAMP = "2026-05-07 21:05:18"
+APP_VERSION = "1.0.3"
+BUILD_STAMP = "2026-05-09 20:05:24"

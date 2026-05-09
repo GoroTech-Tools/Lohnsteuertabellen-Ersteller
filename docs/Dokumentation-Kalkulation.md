@@ -150,10 +150,12 @@ $$L^* = \frac{0{,}119}{0{,}119 - 0{,}055} \times F_\text{Freigrenze} \approx 1{,
 ## 6. Kirchensteuer
 
 ```text
-KiSt = Lohnsteuer × 9 %     (Bayern, Baden-Württemberg: 8 %)
+KiSt = Lohnsteuer_KFB-bereinigt × 9 %     (Bayern, Baden-Württemberg: 8 %)
 ```
 
 In der Tabelle wird einheitlich der Satz von **9 %** (West, ohne Bayern/BW) ausgewiesen.
+
+Die Bemessungsgrundlage für die Kirchensteuer ist – analog zum Solidaritätszuschlag – die Lohnsteuer, die sich auf das um den Kinderfreibetrag **reduzierte** Einkommen ergibt (nicht das volle Bruttoeinkommen). Dadurch sinkt die KiSt mit steigendem Kinderfreibetrag, was dem steuerlichen Grundsatz der Berücksichtigung des Kinderbetreuungsaufwands entspricht.
 
 ---
 
@@ -166,6 +168,8 @@ Reduziertes Einkommen = Brutto − KFB × 50 €/Monat
 ```
 
 Tatsächlich wird der Kinderfreibetrag (je Kind: 6.672 €/Jahr für beide Elternteile) erst im Rahmen der Jahresveranlagung mit dem Kindergeld verrechnet (Günstigerprüfung). Die Tabelle zeigt daher eine Näherung für den monatlichen Lohnsteuereinbehalt.
+
+Das reduzierte Einkommen bildet die Bemessungsgrundlage für **SolZ** und **Kirchensteuer** – die Lohnsteuer selbst wird stets aus dem vollen Bruttoeinkommen berechnet (§ 32a EStG, keine laufende Berücksichtigung des KFB bei der Lohnsteuer).
 
 ---
 
@@ -187,7 +191,7 @@ Tatsächlich wird der Kinderfreibetrag (je Kind: 6.672 €/Jahr für beide Elter
 | ------------- | ---------- |
 | Vorsorgepauschale: direkte AN-Beitragssumme statt vollständigem BMF-PAP | Geringe Abweichung bei Grenzeinkommen; unterschätzt i. d. R. die VSP leicht |
 | SolZ mit Freigrenze (20.350 €/40.700 €) und Milderungszone (11,9 %) | Korrekte Umsetzung gemäß §§ 3, 4 SolZG 1995; für die meisten AN entfällt der SolZ vollständig |
-| KFB als pauschale Einkommensminderung | Nur Näherungswert; echte Günstigerprüfung erfolgt im Jahresausgleich |
+| KFB als pauschale Einkommensminderung | Nur Näherungswert; echte Günstigerprüfung erfolgt im Jahresausgleich; beeinflusst nur SolZ und KiSt, nicht die Lohnsteuer |
 | Kirchensteuer einheitlich 9 % | In Bayern und BW gilt 8 %; keine individuelle Konfessionsauswahl |
 | Keine Berücksichtigung von Altersentlastungsbetrag, Versorgungsfreibetrag etc. | Tabelle gilt für reguläre Arbeitnehmer ohne Versorgungsbezüge |
 

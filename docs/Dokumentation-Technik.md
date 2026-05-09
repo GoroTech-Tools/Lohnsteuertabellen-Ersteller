@@ -5,6 +5,11 @@
 ```bash
 Lohnsteuertabellen-Ersteller/
 ├── src/
+│   ├── available_tax_years.py         # Registry unterstützter Steuerjahre
+│   ├── tax_year_config.py             # Zentrale Jahres-/Dateinamens-Konfiguration
+│   ├── tax_engine.py                  # Generische Steuer- und Export-Hilfslogik
+│   ├── tax_data_2026.py               # Tarifdaten/Konstanten für 2026
+│   ├── tax_data_2027.py               # Template für 2027 (noch nicht aktiv)
 │   ├── generate_2026_tax_table.py      # Kern: Steuerberechnungen
 │   ├── tax_table_gui.py                # GUI: Tkinter-Oberfläche
 │   ├── app_icon.ico                    # Anwendungsicon
@@ -51,9 +56,33 @@ Lohnsteuertabellen-Ersteller/
 #### Konfigurationen
 
 ```python
+TAX_YEAR                  # Zentrales Standard-Steuerjahr
 TAX_PARAMS_2026           # Dict mit Tarifparametern (BMF 2026)
 KFB_VALUES                # Liste: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
-AVAILABLE_GENERATORS      # Dict: Jahr -> Generatorfunktion (aktuell 2026)
+get_sheet_names(year)     # Excel-Blattnamen, z. B. Lohnsteuer_2026
+get_output_filename(year) # Standard-Dateiname, z. B. Lohnsteuer_2026_West_monatlich.xlsx
+```
+
+#### Neue Modulaufteilung
+
+```python
+tax_year_config.py
+  Enthält das aktuell unterstützte Jahr sowie Namenskonventionen.
+
+available_tax_years.py
+  Enthält die Registry der in der Anwendung freigeschalteten Steuerjahre.
+  Von hier bezieht die GUI die auswählbaren Jahre und Generatoren.
+  Zusätzlich: inaktive Template-Einträge für kommende Jahre.
+  Zusätzlich: Aktivierungs-Checkliste für Pending-Templates.
+
+tax_data_2026.py
+  Enthält ausschließlich die 2026-spezifischen Tarifdaten/KFB-Werte.
+
+tax_engine.py
+  Enthält generische Rechenfunktionen, die mit übergebenen Tarifparametern arbeiten.
+
+generate_2026_tax_table.py
+  Bindet 2026-Daten an die generische Engine und stellt kompatible 2026-Wrapper bereit.
 ```
 
 #### Funktionen
@@ -65,11 +94,14 @@ calculate_annual_tax(annual_income, tax_class) -> (tax, solidarity)
 calculate_monthly_tax(monthly_income, tax_class) -> (monthly_tax, monthly_solidarity)
   Monatliche Werte (= Jahreswert / 12).
 
-calculate_church_tax(lohnsteuer) -> kist
-  Kirchensteuer (9 % von Lohnsteuer).
+calculate_church_tax(lohnsteuer_adjusted) -> kist
+  Kirchensteuer (9 % von Lohnsteuer); Bemessungsgrundlage ist die Lohnsteuer
+  auf Basis des KFB-reduzierten Einkommens (analog SolZ), nicht das volle Brutto.
 
 generate_tax_records(monthly_income, tax_class, kfb_values) -> List[Dict]
   Erzeugt für eine Einkommensstufe Datensätze für alle KFB-Werte.
+  Lohnsteuer: aus vollem Einkommen (§ 32a EStG).
+  SolZ + KiSt: aus KFB-reduziertem Einkommen (adjusted_income = Brutto − KFB × 50 €).
 
 generate_2026_tax_table(
     income_min=1000,
@@ -80,10 +112,13 @@ generate_2026_tax_table(
 ) -> pd.DataFrame
   Hauptfunktion: Erstellt Rohdaten-DataFrame mit allen Kombinationen.
 
+generate_tax_table(...) -> pd.DataFrame
+  Generischer Alias für das aktuell unterstützte Steuerjahr.
+
 build_wide_dataframe(df) -> pd.DataFrame
   Transformiert Rohdaten in breite Tabelle (KFB als Spalten).
 
-write_excel_file(output_path, wide_df, raw_df, main_sheet, raw_sheet) -> None
+write_excel_file(output_path, wide_df, raw_df, year, main_sheet, raw_sheet) -> None
   Schreibt Excel mit Formatierung, zwei Blätter.
 ```
 
@@ -92,7 +127,7 @@ write_excel_file(output_path, wide_df, raw_df, main_sheet, raw_sheet) -> None
 ```python
 def main()
   Kommandozeilenparser mit Argumenten:
-    -o, --output: Dateipfad (default: Lohnsteuer_2026_West_monatlich.xlsx)
+    -o, --output: Dateipfad (default aus get_output_filename(TAX_YEAR))
     --income-min: (default: 1000)
     --income-max: (default: 10000)
     --step: (default: 5)
@@ -110,7 +145,22 @@ def main()
 ALLOWED_STEPS = (3, 5, 10, 50)
 DEFAULT_YEAR, DEFAULT_STEP, DEFAULT_INCOME_MIN, DEFAULT_INCOME_MAX, DEFAULT_OUTPUT
   Standardwerte bei Reset.
+AVAILABLE_GENERATORS
+  Mapping unterstütztes Jahr -> Generatorfunktion aus available_tax_years.py.
 ```
+
+Die GUI bezieht unterstützte Jahre jetzt dynamisch aus `available_tax_years.py` und zeigt diese in der Jahresauswahl an. Für ein neues Jahr reicht damit im Regelfall:
+
+1. neues Daten-/Wrapper-Modul ergänzen
+2. in `available_tax_years.py` registrieren
+
+Für vorbereitete, aber noch nicht freigegebene Jahre gibt es `PENDING_TAX_YEAR_TEMPLATES`.
+Diese Einträge erscheinen **nicht** in der GUI-Auswahl.
+
+Nützliche Hilfsfunktionen in `available_tax_years.py`:
+
+- `get_pending_activation_checklist(year)` → Einzelchecks (pass/fail)
+- `get_pending_activation_summary(year)` → kompakte Gesamtübersicht
 
 #### Klasse: `TaxTableGui(tk.Tk)`
 
@@ -141,7 +191,7 @@ _choose_output()
   filedialog für Speicherort-Auswahl.
   
 _resolve_output_path(year) -> Path
-  Konvertiert Eingabe in absoluten Pfad + Dateiname.
+  Konvertiert Eingabe in absoluten Pfad + Dateiname (über get_output_filename).
   
 _create_table()
   Validiert alle Eingaben, ruft Generator auf.
@@ -178,6 +228,22 @@ Output:   Path-Konvertierung, Verzeichnis-Erstellung
 ---
 
 ## 🧮 Tariflogik
+
+Die fachliche Logik ist jetzt zweistufig aufgebaut:
+
+1. **Jahres-Registry** in `available_tax_years.py`
+2. **Jahresabhängige Daten** in `tax_data_2026.py`
+3. **Jahresunabhängige Berechnung** in `tax_engine.py`
+
+Damit lässt sich ein neues Jahr künftig vorbereiten, ohne die komplette Export- und GUI-Logik zu duplizieren.
+
+### Aktivierungspfad für ein neues Jahr (Beispiel 2027)
+
+1. `src/tax_data_2027.py` mit finalen BMF-Werten befüllen
+2. ggf. `generate_2027_tax_table.py` (oder generischen Wrapper) ergänzen
+3. `get_pending_activation_checklist(2027)` prüfen, bis alle fachlichen Checks erfüllt sind
+4. Eintrag in `SUPPORTED_TAX_YEARS` hinzufügen
+5. Optional: zugehörigen Eintrag aus `PENDING_TAX_YEAR_TEMPLATES` entfernen
 
 ### Tarifzonen (2026, gemäß Implementierung)
 
@@ -488,48 +554,58 @@ Aus dem BMF-Programmablaufplan des neuen Jahres folgende Werte ablesen:
 
 > **Tipp:** Die KV-Zusatzbeitragssätze variieren je Kasse. Im vereinfachten Modell wird ein mittlerer Zusatzbeitrag (~1,6 %) auf den halbierten Basissatz addiert. Den aktuellen Durchschnittswert veröffentlicht das BMG jährlich.
 
-### Schritt 2 – Neues Generator-Modul anlegen
+### Schritt 2 – Tarifdaten befüllen
 
-```bash
-# Vorlage kopieren
-copy src\generate_2026_tax_table.py src\generate_2027_tax_table.py
-```
-
-In `src/generate_2027_tax_table.py` ersetzen:
-
-1. Den Dict-Namen `TAX_PARAMS_2026` → `TAX_PARAMS_2027` (alle Vorkommen).
-2. Alle Parameterwerte im Dict durch die neuen BMF-Werte aus Schritt 1.
-3. Den Funktionsnamen `_grundtarif_2026` → `_grundtarif_2027` (alle Vorkommen).
-4. Den Funktionsnamen `generate_2026_tax_table` → `generate_2027_tax_table` (alle Vorkommen).
-5. Den Docstring/Kommentar-Jahrgang im Kopf der Datei.
-
-### Schritt 3 – GUI einbinden
-
-In `src/tax_table_gui.py` drei Änderungen vornehmen:
+In `src/tax_data_2027.py` (bereits als inaktives Template vorhanden) alle Werte eintragen:
 
 ```python
-# 1. Import ergänzen
-from generate_2027_tax_table import (
-    generate_2027_tax_table,
-    build_wide_dataframe,
-    write_excel_file,
-)
+IS_ACTIVE = False   # noch nicht ändern
 
-# 2. Wrapper-Funktion hinzufügen (analog zu generate_for_2026)
-def generate_for_2027(output_path: Path, step: int, income_min: float, income_max: float) -> None:
-    """Erzeugt die 2027er-Tabelle und schreibt sie als Excel-Datei."""
-    raw_df = generate_2027_tax_table(step=step, income_min=income_min, income_max=income_max)
-    wide_df = build_wide_dataframe(raw_df)
-    write_excel_file(output_path, wide_df, raw_df,
-                     main_sheet="Lohnsteuer 2027", raw_sheet="Rohdaten 2027")
-
-# 3. Neues Jahr in AVAILABLE_GENERATORS eintragen und DEFAULT_YEAR aktualisieren
-AVAILABLE_GENERATORS: Dict[int, GeneratorFn] = {
-    2026: generate_for_2026,
-    2027: generate_for_2027,   # neu
+TAX_PARAMS_2027 = {
+    "grundfreibetrag": 12xxx,   # aus BMF-PAP
+    # ... alle weiteren Parameter
 }
-DEFAULT_YEAR = "2027"
+
+KFB_VALUES_2027 = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
 ```
+
+### Schritt 2a – Aktivierungsstatus prüfen (Entwickler-CLI)
+
+```bash
+cd src
+py -3 -m available_tax_years --check 2027
+```
+
+Erwartete Ausgabe, wenn alles befüllt ist:
+
+```text
+Aktivierungsstatus für 2027: BEREIT
+  Bestanden: 5  |  Offen: 0
+
+  ✓ [module_importable]  Datenmodul ist importierbar
+  ✓ [tax_params_present]  TAX_PARAMS_2027 ist vorhanden und nicht leer
+  ✓ [kfb_values_present]  KFB_VALUES_2027 ist vorhanden und nicht leer
+  ✓ [still_inactive]  Template ist weiterhin als inaktiv markiert (IS_ACTIVE=False)
+  ✓ [not_registered_as_supported]  Jahr ist noch nicht in SUPPORTED_TAX_YEARS registriert
+```
+
+### Schritt 3 – In Registry freischalten
+
+In `src/available_tax_years.py`:
+
+```python
+# Import des neuen Datenjahres ergänzen
+from generate_2026_tax_table import generate_tax_table as generate_2026
+from generate_2027_tax_table import generate_tax_table as generate_2027  # neu
+
+# Jahr in SUPPORTED_TAX_YEARS eintragen
+SUPPORTED_TAX_YEARS: dict[int, TaxYearRegistration] = {
+    2026: TaxYearRegistration(year=2026, label="Lohnsteuer 2026", generator=generate_2026),
+    2027: TaxYearRegistration(year=2027, label="Lohnsteuer 2027", generator=generate_2027),  # neu
+}
+```
+
+Die GUI zeigt das neue Jahr **automatisch** an – keine weiteren GUI-Änderungen nötig.
 
 ### Schritt 4 – Kalkulationsdokumentation aktualisieren
 
@@ -555,9 +631,10 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 ### Checkliste
 
 - [ ] BMF-PAP für neues Jahr heruntergeladen und Werte abgelesen
-- [ ] `src/generate_<YYYY>_tax_table.py` angelegt und alle Parameter aktualisiert
-- [ ] `tax_table_gui.py` – Import, Wrapper-Funktion und `AVAILABLE_GENERATORS` ergänzt
-- [ ] `DEFAULT_YEAR` auf neues Jahr gesetzt
+- [ ] `src/tax_data_<YYYY>.py` mit finalen Tarifparametern und KFB-Werten befüllt
+- [ ] `py -3 -m available_tax_years --check <YYYY>` zeigt alle Checks als bestanden
+- [ ] `src/generate_<YYYY>_tax_table.py` angelegt (Wrapper analog zu 2026)
+- [ ] Jahr in `SUPPORTED_TAX_YEARS` in `available_tax_years.py` registriert
 - [ ] `docs/Dokumentation-Kalkulation.md` – Zahlenwerte aktualisiert
 - [ ] Plausibilitätsprüfung: Ergebnis für ein Beispiel-Einkommen gegen BMF-Tabelle oder [bmf-steuerrechner.de](https://www.bmf-steuerrechner.de) geprüft
 - [ ] EXE neu gebaut und Release-ZIP erstellt
@@ -602,12 +679,13 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 
 ## 🗒️ Änderungsstand
 
+- **09.05.2026:** Aktivierungs-Workflow für neue Steuerjahre auf Registry-Architektur aktualisiert; Entwickler-CLI (`py -3 -m available_tax_years --check`) dokumentiert.
 - **08.05.2026:** Dokumentation mit Implementierung abgeglichen (Tarifwerte, Steuerklassenlogik, Quellenangaben).
 
 ---
 
-**Version:** 1.0.0  
-**Stand:** 07.05.2026  
+**Version:** 1.0.3  
+**Stand:** 09.05.2026  
 **Autor:** GoroTech  
 **Lizenz:** Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.  
 **Zielentwickler:** Python 3.8+

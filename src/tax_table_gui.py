@@ -14,14 +14,20 @@ from __future__ import annotations
 import sys
 import subprocess
 from pathlib import Path
-from typing import Callable, Dict
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+from available_tax_years import (
+    get_available_generators,
+    get_default_tax_year,
+    get_supported_years,
+)
 from generate_2026_tax_table import (
     build_wide_dataframe,
-    generate_2026_tax_table,
     write_excel_file,
+)
+from tax_year_config import (
+    get_output_filename,
 )
 
 try:
@@ -37,26 +43,13 @@ except ImportError:
 
 
 ALLOWED_STEPS = (3, 5, 10, 50)
-DEFAULT_YEAR = "2026"
+SUPPORTED_YEARS = tuple(get_supported_years())
+DEFAULT_YEAR = str(get_default_tax_year())
 DEFAULT_STEP = "5"
 DEFAULT_INCOME_MIN = "1000"
 DEFAULT_INCOME_MAX = "10000"
 DEFAULT_OUTPUT = "."
-GeneratorFn = Callable[..., object]
-
-
-def generate_for_2026(output_path: Path, step: int, income_min: float, income_max: float) -> None:
-    """Erzeugt die 2026er-Tabelle und schreibt sie als Excel-Datei."""
-    raw_df = generate_2026_tax_table(step=step, income_min=income_min, income_max=income_max)
-    wide_df = build_wide_dataframe(raw_df)
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    write_excel_file(output_path=output_path, wide_df=wide_df, raw_df=raw_df)
-
-
-AVAILABLE_GENERATORS: Dict[int, GeneratorFn] = {
-    2026: generate_for_2026,
-}
+AVAILABLE_GENERATORS = get_available_generators()
 
 
 class TaxTableGui(tk.Tk):
@@ -104,8 +97,16 @@ class TaxTableGui(tk.Tk):
         root_frame.grid(row=0, column=0, sticky="nsew")
 
         ttk.Label(root_frame, text="Jahr (YYYY):").grid(row=0, column=0, sticky="w", pady=(0, 8))
-        year_entry = ttk.Entry(root_frame, textvariable=self.year_var, width=16)
-        year_entry.grid(row=0, column=1, sticky="ew", pady=(0, 8))
+        year_values = [str(year) for year in SUPPORTED_YEARS]
+        year_combo = ttk.Combobox(
+            root_frame,
+            textvariable=self.year_var,
+            values=year_values,
+            state="readonly",
+            width=14,
+        )
+        year_combo.grid(row=0, column=1, sticky="w", pady=(0, 8))
+        year_combo.set(DEFAULT_YEAR)
 
         ttk.Label(root_frame, text="Schrittweite (EUR):").grid(row=1, column=0, sticky="w", pady=(0, 8))
         step_combo = ttk.Combobox(
@@ -167,7 +168,7 @@ class TaxTableGui(tk.Tk):
         root_frame.columnconfigure(1, weight=1)
 
     def _default_filename(self, year: int) -> str:
-        return f"Lohnsteuer_{year}_West_monatlich.xlsx"
+        return get_output_filename(year)
 
     def _reset_fields(self) -> None:
         """Setzt alle Eingabefelder auf Standardwerte zurück."""
@@ -290,7 +291,10 @@ class TaxTableGui(tk.Tk):
                 f"Generierung läuft… (Schrittweite: {step} EUR, Bereich: {income_min}-{income_max} EUR)"
             )
             self.update_idletasks()
-            generator(output_path, step, income_min, income_max)
+            raw_df = generator(step=step, income_min=income_min, income_max=income_max)
+            wide_df = build_wide_dataframe(raw_df)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            write_excel_file(output_path=output_path, wide_df=wide_df, raw_df=raw_df, year=year)
             self.status_var.set("Fertig")
             messagebox.showinfo(
                 "Erfolg",

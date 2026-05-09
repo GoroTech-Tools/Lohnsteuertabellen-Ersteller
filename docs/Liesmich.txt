@@ -49,7 +49,7 @@ Ein benutzerfreundliches Tool zum Erstellen von Lohnsteuertabellen nach aktuelle
 
 ```bash
 python generate_2026_tax_table.py \
-  -o "Lohnsteuer_2026_West.xlsx" \
+   -o "Lohnsteuer_2026_West_monatlich.xlsx" \
   --income-min 800 \
   --income-max 15000 \
   --step 10
@@ -59,7 +59,7 @@ python generate_2026_tax_table.py \
 
 Erzeugte Excel-Datei (`*.xlsx`) mit zwei Blättern:
 
-### Blatt „Tabelle"
+### Blatt „Lohnsteuer_2026"
 
 Kompakte Darstellung mit Spalten:
 
@@ -68,7 +68,7 @@ Kompakte Darstellung mit Spalten:
 - Lohnsteuer (€)
 - KFB-0 bis KFB-4 (Solz + Kirchensteuer)
 
-### Blatt „Tabelle_Rohdaten"
+### Blatt „Lohnsteuer_Rohdaten_2026"
 
 Detaillierte Rohdaten mit allen Kombinationen:
 
@@ -127,7 +127,17 @@ python generate_2026_tax_table.py -o "Ausgabe.xlsx"
 Lohnsteuertabellen-Ersteller.exe
 ```
 
-## 📦 Release-Paket (automatisch nach Build)
+## � Verwendung mit der Lohn- und Gehaltsabrechnung
+
+Die mit diesem Tool erstellten Lohnsteuertabellen sind für die Nutzung innerhalb der Microsoft Excel-Arbeitsmappe **„Lohn- und Gehaltsabrechnungen 2026.xlsm"** vorgesehen. Die Arbeitsmappe verweist auf die erzeugten Tabellen und nutzt die Steuerwerte für die automatisierte Lohn- und Gehaltsabrechnung.
+
+- **Zieldatei:** `Lohn- und Gehaltsabrechnungen 2026.xlsm`
+- **Empfohlener Speicherort:** Selbes Verzeichnis wie die Arbeitsmappe oder ein eingetragener Suchpfad innerhalb der Mappe
+- **Vorgehensweise:** Tabelle mit diesem Tool erzeugen → Datei im vorgesehenen Ordner ablegen → Excel-Mappe öffnen, ggf. Verknüpfungen aktualisieren
+
+---
+
+## �📦 Release-Paket (automatisch nach Build)
 
 Nach jedem erfolgreichen Build wird zusätzlich zur EXE automatisch ein ZIP-Release erzeugt.
 
@@ -147,6 +157,21 @@ A: Alle 6 (alleinstehend bis mehrfachbeschäftigung) mit steuerklassenspezifisch
 **F: Für welche Jahre gibt es Daten?**  
 A: Derzeit 2026. Weitere Jahre können nach Verfügbarkeit der BMF-Tarifformeln ergänzt werden.
 
+**Hinweis für Entwickler:** Das Standardjahr sowie Blatt- und Dateinamen werden zentral in `src/tax_year_config.py` gepflegt.
+
+Die fachlichen Tarifdaten für 2026 liegen zusätzlich in `src/tax_data_2026.py`, während generische Berechnungsfunktionen in `src/tax_engine.py` vorbereitet sind.
+
+Welche Jahre in der Oberfläche auswählbar sind, wird zentral in `src/available_tax_years.py` gesteuert.
+
+Vorbereitete, aber noch nicht freigegebene Jahre (z. B. 2027-Template) werden dort separat als inaktiv geführt und nicht in der GUI angezeigt.
+
+Den Aktivierungsstatus eines vorbereiteten Jahres können Entwickler direkt prüfen:
+
+```powershell
+cd src
+py -3 -m available_tax_years --check 2027
+```
+
 **F: Ist die Berechnung amtlich?**  
 A: Die Formeln folgen den BMF-Parametern, bilden aber eine vereinfachte Annäherung. Für offizielle Zwecke: BMF-Originalquellen konsultieren.
 
@@ -165,10 +190,12 @@ Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.
 
 ## 🗒️ Änderungsstand
 
+- **09.05.2026 (v1.0.2):** Kirchensteuerberechnung korrigiert – KiSt wird jetzt wie der SolZ auf Basis des um den Kinderfreibetrag reduzierten Einkommens berechnet. Verweis auf Excel-Arbeitsmappe „Lohn- und Gehaltsabrechnungen 2026.xlsm" ergänzt.
+- **09.05.2026:** Entwickler-CLI-Hinweis für Aktivierungsprüfung neuer Steuerjahre ergänzt.
 - **08.05.2026:** Dokumentation mit Implementierung abgeglichen (Tarifwerte, Steuerklassenlogik, Quellenangaben).
 
 ---
 
-**Version:** 1.0.0  
-**Stand:** 07.05.2026  
+**Version:** 1.0.3  
+**Stand:** 09.05.2026  
 **Autor:** GoroTech
