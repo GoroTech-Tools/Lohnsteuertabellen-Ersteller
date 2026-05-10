@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Callable, TypedDict
 
 from generate_2026_tax_table import generate_tax_table
+from generate_tax_tables_universal import generate_tax_table_universal
 from tax_year_config import TAX_YEAR
 
 GeneratorFn = Callable[..., object]
@@ -53,11 +54,21 @@ class TemplateChecklistItem:
 
 
 SUPPORTED_TAX_YEARS: dict[int, TaxYearRegistration] = {
-    TAX_YEAR: TaxYearRegistration(
-        year=TAX_YEAR,
-        label=f"Lohnsteuer {TAX_YEAR}",
-        generator=generate_tax_table,
-    )
+    2024: TaxYearRegistration(
+        year=2024,
+        label="Lohnsteuer 2024 (PAP)",
+        generator=lambda **kwargs: generate_tax_table_universal(year=2024, **kwargs),
+    ),
+    2025: TaxYearRegistration(
+        year=2025,
+        label="Lohnsteuer 2025 (PAP)",
+        generator=lambda **kwargs: generate_tax_table_universal(year=2025, **kwargs),
+    ),
+    2026: TaxYearRegistration(
+        year=2026,
+        label="Lohnsteuer 2026 (PAP)",
+        generator=lambda **kwargs: generate_tax_table_universal(year=2026, **kwargs),
+    ),
 }
 
 

@@ -1,4 +1,4 @@
-# setup.ps1 — Erstellt .venv und installiert Abhängigkeiten aus requirements.txt
+# setup.ps1 — NUR Setup: Erstellt .venv und installiert Abhängigkeiten aus requirements.txt
 # Aufruf: .\setup.ps1
 # Optional: .\setup.ps1 -Force  (löscht bestehende .venv und erstellt neu)
 param([switch]$Force)
