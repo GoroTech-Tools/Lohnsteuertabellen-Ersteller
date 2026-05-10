@@ -7,6 +7,7 @@ import importlib
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Callable, TypedDict
+from functools import partial
 
 from generate_2026_tax_table import generate_tax_table
 from generate_tax_tables_universal import generate_tax_table_universal
@@ -54,21 +55,12 @@ class TemplateChecklistItem:
 
 
 SUPPORTED_TAX_YEARS: dict[int, TaxYearRegistration] = {
-    2024: TaxYearRegistration(
-        year=2024,
-        label="Lohnsteuer 2024 (PAP)",
-        generator=lambda **kwargs: generate_tax_table_universal(year=2024, **kwargs),
-    ),
-    2025: TaxYearRegistration(
-        year=2025,
-        label="Lohnsteuer 2025 (PAP)",
-        generator=lambda **kwargs: generate_tax_table_universal(year=2025, **kwargs),
-    ),
-    2026: TaxYearRegistration(
-        year=2026,
-        label="Lohnsteuer 2026 (PAP)",
-        generator=lambda **kwargs: generate_tax_table_universal(year=2026, **kwargs),
-    ),
+    year: TaxYearRegistration(
+        year=year,
+        label=f"Lohnsteuer {year} (PAP)",
+        generator=partial(generate_tax_table_universal, year=year),
+    )
+    for year in range(2006, 2027)  # 2006–2026 (21 Jahre)
 }
 
 
