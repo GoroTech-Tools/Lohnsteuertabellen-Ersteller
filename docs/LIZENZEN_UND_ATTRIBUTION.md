@@ -5,10 +5,10 @@
 ### Lohnsteuer-2026 (PAP-Rechner)
 
 | Feld | Wert |
-|------|------|
+| ---- | ---- |
 | **Projekt** | Lohnsteuer (Lohnpap Generator) |
 | **Autor** | Marcel Lehmann |
-| **Ursprung** | https://github.com/MarcelLehmann/Lohnsteuer |
+| **Ursprung** | <https://github.com/MarcelLehmann/Lohnsteuer> |
 | **Lizenz** | Apache License 2.0 |
 | **Copyright** | © 2015-2025 Marcel Lehmann |
 | **Verwendung** | Programmablaufpläne (PAP) der Lohnsteuerberechnung |
@@ -16,7 +16,7 @@
 
 ### Apache License 2.0 — Text
 
-```
+```text
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -35,7 +35,8 @@ limitations under the License.
 Die Programmablaufpläne (PAP) sind offizielle Dokumente des Bundesministerium der Finanzen und unterliegen ggf. anderen Vorgaben.
 
 **Hinweis:** Diese sind für öffentliche Nutzung frei verfügbar unter:
-- https://www.bmf-steuerrechner.de/interface/programmablauf.xhtml
+
+- <https://www.bmf-steuerrechner.de/interface/programmablauf.xhtml>
 
 ---
 
@@ -52,13 +53,15 @@ Die Programmablaufpläne (PAP) sind offizielle Dokumente des Bundesministerium d
 
 ## Attribution (in Dokumentation erforderlich)
 
-### Zur Nutzung in:
+### Zur Nutzung in
+
 - `README.md` → Listet externe Abhängigkeiten
 - `docs/LOHNSTEUER_INTEGRATION.md` → Detaillierte Dokumentation
 - Release-Notes → Bei Major Updates mit PAP-Änderungen
 - Quellcode → In `pap_parser.py` als Kommentar
 
-### Beispiel-Attribution im Code:
+### Beispiel-Attribution im Code
+
 ```python
 """
 Lohnsteuer-Berechnung basierend auf 
@@ -78,10 +81,10 @@ Offizielle PAP-Quelle:
 
 ## Version History
 
-| Datum | Version | Änderung |
-|-------|---------|----------|
-| 10.05.2026 | 1.0 | Initiale Dokumentation, PAP 2026 |
-| - | - | - |
+| Datum      | Version | Änderung                         |
+| ---------- | ------- | -------------------------------- |
+| 10.05.2026 | 1.0     | Initiale Dokumentation, PAP 2026 |
+| —          | —       | —                                |
 
 ---
 

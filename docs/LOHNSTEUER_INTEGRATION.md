@@ -1,25 +1,27 @@
 # Analyse: Lohnsteuer-2026_1 Integration in Lohnsteuertabellen-Ersteller
 
-## 📊 Projektübersicht
+## Projektübersicht
 
-**Quelle:** `D:\Lohnsteuer-2026_1` (Java Lohnsteuer-Rechner, © 2015-2025 Marcel Lehmann)  
-**Lizenz:** Apache 2.0 ✅ (kompatibel, Attribution erforderlich)  
+**Quelle:** `D:\Lohnsteuer-2026_1` (Java Lohnsteuer-Rechner, © 2015-2025 Marcel Lehmann)
+**Lizenz:** Apache 2.0 ✅ (kompatibel, Attribution erforderlich)
 **Basis:** Offizielle Programmablaufpläne (PAP) des Bundesministerium der Finanzen (BMF)
 
 ---
 
-## 🎯 Relevante Komponenten
+## Relevante Komponenten
 
-### 1. **lohnsteuer.jar** (Direkt nutzbar)
+### 1. lohnsteuer.jar (Direkt nutzbar)
+
 - **Pfad:** `LohnPapGenerator/lohnsteuer.jar`
 - **Inhalt:** Kompilierte Java-Klassen für Lohnsteuerberechnung
 - **Jahrgänge:** 2006-2026
-- **Verwendung:** 
+- **Verwendung:**
   - Via JNI in Python laden
   - Oder als Sub-Process aufrufen
   - Oder Java-API studieren und in Python nachbilden
 
-### 2. **Java-Quellcode** (Referenz/Logik-Vorlage)
+### 2. Java-Quellcode (Referenz/Logik-Vorlage)
+
 - **Verzeichnis:** `LohnPapGenerator/src/de/powerproject/lohnpap/pap/`
 - **Dateien:** `Lohnsteuer.java`, `Lohnsteuer2026.java`, ... `Lohnsteuer2006.java`
 - **Inhalt:**
@@ -32,26 +34,29 @@
   - Verständnis der Ein/Ausgabe-Variablen
   - Validierungsreferenz
 
-### 3. **XML PAP-Dateien** (Dokumentation)
+### 3. XML PAP-Dateien (Dokumentation)
+
 - **Verzeichnis:** `LohnPapGenerator/src/de/powerproject/lohnpap/xml/`
 - **Dateien:** `Lohnsteuer2026.xml`, `Lohnsteuer2025.xml`, ...
-- **Inhalt:** 
-  - Programm­ablauf­plan als strukturiertes XML
+- **Inhalt:**
+  - Programmablaufplan als strukturiertes XML
   - Berechnungsschritte, Formeln, Konstanten pro Jahr
   - Offizielle Basis für Generator
-- **Nutzung:** 
+- **Nutzung:**
   - Daten-Extraktion (Steuersätze, Freibeträge, Grenzwerte pro Jahr)
   - Automatisierte Tabellenerzeugung aus XML
 
-### 4. **Interface-Definition** (API-Standard)
+### 4. Interface-Definition (API-Standard)
+
 - **Datei:** `LohnsteuerInterface.java`
 - **Nutzen:** Standardisierte Input/Output-Variablen über alle Jahre
 
 ---
 
-## ✅ Integration-Optionen für Lohnsteuertabellen-Ersteller
+## Integration-Optionen für Lohnsteuertabellen-Ersteller
 
-### **Option A: JAR direkt nutzen (schnellste)**
+### Option A: JAR direkt nutzen (schnellste)
+
 ```python
 # In Python über JPype oder Jython
 from jpype import *
@@ -71,12 +76,14 @@ rechner.main()                # Berechnung
 # Ausgabe
 steuer_cents = rechner.getLstlzz()  # Lohnsteuer in Cents
 ```
+
 **Vorteil:** Sofort lauffähig, 100% Korrektheit  
 **Nachteil:** Java-Runtime notwendig, zusätzliche Abhängigkeit
 
 ---
 
-### **Option B: Python-Implementierung (empfohlen für Portabilität)**
+### Option B: Python-Implementierung (empfohlen für Portabilität)
+
 ```python
 # XML parsen + PAP-Logik in Python übersetzen
 import xml.etree.ElementTree as ET
@@ -107,22 +114,25 @@ def berechne_lohnsteuer_2026(bruttolohn: float) -> dict:
         "netto": ...
     }
 ```
+
 **Vorteil:** Keine Java-Abhängigkeit, leicht zu debuggen, flexibel erweiterbar  
 **Nachteil:** Manuelle Umsetzung pro Jahr
 
 ---
 
-### **Option C: Hybrid (Best Practice)**
+### Option C: Hybrid (Best Practice)
+
 1. XML extrahieren → Python-Datenstrukturen erzeugen
 2. JAR als Validierungs-Fallback für komplexe Fälle
-3. Generierte Tabellen mit beiden Quellen kreuzvaldieren
+3. Generierte Tabellen mit beiden Quellen kreuzvalidieren
 
 ---
 
-## 📋 Konkrete Umsetzungs-Schritte
+## Konkrete Umsetzungs-Schritte
 
-### **Schritt 1: Datei-Struktur in Lohnsteuertabellen-Ersteller**
-```
+### Schritt 1: Datei-Struktur in Lohnsteuertabellen-Ersteller
+
+```text
 src/
   lohnsteuer_integration/
     __init__.py
@@ -140,8 +150,10 @@ data/
     ...
 ```
 
-### **Schritt 2: XML-Extraktion**
+### Schritt 2: XML-Extraktion
+
 Beispiel aus `Lohnsteuer2026.xml`:
+
 ```xml
 <Lohnsteuer>
   <Berechnung>
@@ -151,9 +163,11 @@ Beispiel aus `Lohnsteuer2026.xml`:
   </Berechnung>
 </Lohnsteuer>
 ```
+
 → Python-Dict erzeugen für Tabellenberechnung
 
-### **Schritt 3: Tabellen-Generator aktualisieren**
+### Schritt 3: Tabellen-Generator aktualisieren
+
 ```python
 def generate_lohnsteuer_table(jahr: int, bruttospanne: list) -> DataFrame:
     """Generiere Lohnsteuer-Tabelle aus PAP-Logik"""
@@ -174,14 +188,16 @@ def generate_lohnsteuer_table(jahr: int, bruttospanne: list) -> DataFrame:
 
 ---
 
-## 🔗 Lizenzkompliance
+## Lizenzkompliance
 
 **Erforderlich:**
+
 - ✅ Apache 2.0 License-Text einbinden (bereits vorhanden in LICENSE.md)
 - ✅ Copyright-Hinweis: "© 2015-2025 Marcel Lehmann (Apache 2.0)"
-- ✅ Quellenangabe: `https://github.com/MarcelLehmann/Lohnsteuer` (falls verlinkt)
+- ✅ Quellenangabe: <https://github.com/MarcelLehmann/Lohnsteuer> (falls verlinkt)
 
 **Einfach zu erfüllen mit Datei `DEPENDENCIES.md`:**
+
 ```markdown
 ## Abhängigkeiten & Lizenzen
 
@@ -195,7 +211,7 @@ def generate_lohnsteuer_table(jahr: int, bruttospanne: list) -> DataFrame:
 
 ---
 
-## 🚀 Empfehlung
+## Empfehlung
 
 **Sofortmaßnahmen:**
 
@@ -207,7 +223,7 @@ def generate_lohnsteuer_table(jahr: int, bruttospanne: list) -> DataFrame:
 
 ---
 
-## 📚 Weitere Ressourcen
+## Weitere Ressourcen
 
 - [Offizielle PAP vom BMF](https://www.bmf-steuerrechner.de/interface/programmablauf.xhtml)
 - [GitHub: MarcelLehmann/Lohnsteuer](https://github.com/MarcelLehmann/Lohnsteuer)
