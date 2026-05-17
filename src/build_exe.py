@@ -253,6 +253,7 @@ def build_exe():
     icon_file = src_dir / "app_icon.ico"
     docs_readme_file = docs_dir / "Liesmich.txt"
     docs_tech_file = docs_dir / "Dokumentation-Technik.md"
+    pap_xml_dir = root_dir / "data" / "pap_xml"
     build_dir = root_dir / "build"
     dist_dir = root_dir / "dist"
     version_file = build_dir / "version_info.txt"
@@ -270,6 +271,11 @@ def build_exe():
         print("❌ Fehler: Dokumentationsdateien fehlen in docs/!")
         print(f"   Erwartet: {docs_readme_file}")
         print(f"   Erwartet: {docs_tech_file}")
+        return 1
+
+    if not pap_xml_dir.exists() or not any(pap_xml_dir.glob("*.xml")):
+        print("❌ Fehler: PAP-XML-Dateien fehlen!")
+        print(f"   Erwartet XML-Dateien unter: {pap_xml_dir}")
         return 1
 
     # Build-Verzeichnis vorbereiten (u.a. für version_info.txt)
@@ -301,6 +307,7 @@ def build_exe():
     print(f"Root: {root_dir}")
     print(f"GUI-Datei: {gui_file}")
     print(f"Icon: {icon_arg or '(keine)'}")
+    print(f"PAP-XML: {pap_xml_dir}")
     print(f"Version: {version_text}")
     print(f"Versionsstatus: {version_state_file}")
     print(f"Stand: {stand_text}")
@@ -320,6 +327,7 @@ def build_exe():
         f"--version-file={version_file}",
         "--collect-data=pandas",
         "--collect-data=openpyxl",
+        "--collect-submodules=xlsxwriter",
         "--collect-submodules=openpyxl",
         "--exclude-module=pandas.tests",
         "--exclude-module=numpy.tests",
@@ -327,6 +335,7 @@ def build_exe():
         "--hidden-import=tkinter",
         "--hidden-import=tkinter.filedialog",
         "--hidden-import=tkinter.messagebox",
+        f"--add-data={pap_xml_dir};data/pap_xml",
     ]
     
     # Icon optional

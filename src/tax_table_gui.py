@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import sys
 import subprocess
+import threading
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -68,6 +69,7 @@ class TaxTableGui(tk.Tk):
         self.income_max_var = tk.StringVar(value=DEFAULT_INCOME_MAX)
         self.output_var = tk.StringVar(value=DEFAULT_OUTPUT)
         self.status_var = tk.StringVar(value="Bereit")
+        self.create_btn: ttk.Button | None = None
 
         self._build_ui()
 
@@ -147,8 +149,8 @@ class TaxTableGui(tk.Tk):
         reset_btn = ttk.Button(button_frame, text="Zurücksetzen", command=self._reset_fields)
         reset_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
 
-        create_btn = ttk.Button(button_frame, text="Tabelle erstellen", command=self._create_table)
-        create_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
+        self.create_btn = ttk.Button(button_frame, text="Tabelle erstellen", command=self._create_table)
+        self.create_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
 
         help_frame = ttk.Frame(root_frame)
         help_frame.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(10, 0))
@@ -218,6 +220,58 @@ class TaxTableGui(tk.Tk):
 
         return path
 
+    def _set_busy_state(self, busy: bool) -> None:
+        """Aktiviert bzw. deaktiviert die GUI während der Generierung."""
+        if self.create_btn is not None:
+            self.create_btn.configure(state="disabled" if busy else "normal")
+
+    def _set_status(self, message: str) -> None:
+        """Setzt den Status im UI-Thread."""
+        self.status_var.set(message)
+        self.update_idletasks()
+
+    def _run_table_creation(
+        self,
+        *,
+        year: int,
+        step: int,
+        income_min: float,
+        income_max: float,
+        output_path: Path,
+    ) -> None:
+        """Führt die eigentliche Erzeugung im Hintergrund-Thread aus."""
+        try:
+            generator = AVAILABLE_GENERATORS.get(year)
+            if generator is None:
+                raise RuntimeError(f"Kein Generator für Jahr {year} verfügbar.")
+
+            self.after(
+                0,
+                self._set_status,
+                f"Rohdaten werden berechnet… (Schrittweite: {step} EUR, Bereich: {income_min}-{income_max} EUR)",
+            )
+            raw_df = generator(step=step, income_min=income_min, income_max=income_max)
+
+            self.after(0, self._set_status, "Excel-Struktur wird erstellt…")
+            wide_df = build_wide_dataframe(raw_df)
+
+            self.after(0, self._set_status, "Excel-Datei wird geschrieben…")
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            write_excel_file(output_path=output_path, wide_df=wide_df, raw_df=raw_df, year=year)
+
+            self.after(0, self._set_status, "Fertig")
+            self.after(
+                0,
+                messagebox.showinfo,
+                "Erfolg",
+                f"Die Tabelle wurde erfolgreich erstellt:\n{output_path.resolve()}",
+            )
+        except Exception as exc:
+            self.after(0, self._set_status, "Fehler")
+            self.after(0, messagebox.showerror, "Fehler", f"Erstellung fehlgeschlagen:\n{exc}")
+        finally:
+            self.after(0, self._set_busy_state, False)
+
     def _create_table(self) -> None:
         year_text = self.year_var.get().strip()
         step_text = self.step_var.get().strip()
@@ -286,23 +340,21 @@ class TaxTableGui(tk.Tk):
 
         output_path = self._resolve_output_path(year)
 
-        try:
-            self.status_var.set(
-                f"Generierung läuft… (Schrittweite: {step} EUR, Bereich: {income_min}-{income_max} EUR)"
-            )
-            self.update_idletasks()
-            raw_df = generator(step=step, income_min=income_min, income_max=income_max)
-            wide_df = build_wide_dataframe(raw_df)
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            write_excel_file(output_path=output_path, wide_df=wide_df, raw_df=raw_df, year=year)
-            self.status_var.set("Fertig")
-            messagebox.showinfo(
-                "Erfolg",
-                f"Die Tabelle wurde erfolgreich erstellt:\n{output_path.resolve()}",
-            )
-        except Exception as exc:
-            self.status_var.set("Fehler")
-            messagebox.showerror("Fehler", f"Erstellung fehlgeschlagen:\n{exc}")
+        self._set_busy_state(True)
+        self._set_status("Generierung startet…")
+
+        worker = threading.Thread(
+            target=self._run_table_creation,
+            kwargs={
+                "year": year,
+                "step": step,
+                "income_min": income_min,
+                "income_max": income_max,
+                "output_path": output_path,
+            },
+            daemon=True,
+        )
+        worker.start()
 
     def _open_user_manual(self) -> None:
         """Öffnet die Anwender-Dokumentation (Liesmich.txt).

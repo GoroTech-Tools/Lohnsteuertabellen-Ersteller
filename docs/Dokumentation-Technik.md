@@ -7,22 +7,29 @@ Lohnsteuertabellen-Ersteller/
 ├── src/
 │   ├── available_tax_years.py         # Registry unterstützter Steuerjahre
 │   ├── tax_year_config.py             # Zentrale Jahres-/Dateinamens-Konfiguration
-│   ├── tax_engine.py                  # Generische Steuer- und Export-Hilfslogik
-│   ├── tax_data_2026.py               # Tarifdaten/Konstanten für 2026
-│   ├── tax_data_2027.py               # Template für 2027 (noch nicht aktiv)
-│   ├── generate_2026_tax_table.py      # Kern: Steuerberechnungen
-│   ├── tax_table_gui.py                # GUI: Tkinter-Oberfläche
-│   ├── app_icon.ico                    # Anwendungsicon
-│   ├── build_exe.py                    # PyInstaller-Build-Skript
-├── requirements.txt                     # Abhängigkeiten
+│   ├── generate_tax_tables_universal.py  # Universeller Tabellenerzeuger (alle Jahre)
+│   ├── lohnsteuer_integration.py      # PAP-Parser (XML-basiert, Standard)
+│   ├── pap_integration_config.py      # Feature-Flag USE_PAP_PARSER
+│   ├── generate_2026_tax_table.py     # Rückwärtskompatib. Wrapper für 2026
+│   ├── tax_table_gui.py               # GUI: Tkinter-Oberfläche
+│   ├── app_icon.ico                   # Anwendungsicon
+│   ├── build_exe.py                   # PyInstaller-Build-Skript
+│   └── _legacy/                       # Archivierte Legacy-Module (nur 2026)
+│       ├── tax_engine.py              # Generische Rechenfunktionen
+│       ├── tax_data_2026.py           # Tarifdaten/Konstanten 2026
+│       └── generate_2026_simple.py    # Einfacher 2026-Generator
+├── data/
+│   └── pap_xml/                       # PAP-XML-Dateien (2006–2026, BMF)
+├── requirements.txt                   # Abhängigkeiten
 ├── docs/
-│   ├── Liesmich.txt                         # Anwender-Dokumentation
-│   ├── Dokumentation-Technik.md            # Diese Datei
-│   ├── Dokumentation-Kalkulation.md        # Formeln, Parameter, Besonderheiten
-│   └── Lizenz.txt                           # Lizenztext
-├── build/                               # (bei EXE-Build erstellt)
-├── dist/                                # (bei EXE-Build erstellt)
-├── release/                             # ZIP-Release (bei EXE-Build erstellt)
+│   ├── Liesmich.txt                   # Anwender-Dokumentation
+│   ├── Dokumentation-Technik.md      # Diese Datei
+│   ├── Dokumentation-Kalkulation.md  # Formeln, Parameter, Besonderheiten
+│   ├── Lizenz.txt                     # Lizenztext
+│   ├── LOHNSTEUER_INTEGRATION.md     # PAP-Parser-Architektur
+│   └── LIZENZEN_UND_ATTRIBUTION.md   # Drittanbieter-Lizenzen
+├── build/                             # (bei EXE-Build erstellt)
+├── release/                           # ZIP-Release (bei EXE-Build erstellt)
 └── ...
 ```
 
@@ -95,13 +102,13 @@ calculate_monthly_tax(monthly_income, tax_class) -> (monthly_tax, monthly_solida
   Monatliche Werte (= Jahreswert / 12).
 
 calculate_church_tax(lohnsteuer_adjusted) -> kist
-  Kirchensteuer (9 % von Lohnsteuer); Bemessungsgrundlage ist die Lohnsteuer
-  auf Basis des KFB-reduzierten Einkommens (analog SolZ), nicht das volle Brutto.
+  Kirchensteuer (9 %); Bemessungsgrundlage ist die nach § 51a EStG ermittelte
+  Steuerbasis (JBMG), nicht die reguläre Lohnsteuer (LSTLZZ).
 
 generate_tax_records(monthly_income, tax_class, kfb_values) -> List[Dict]
   Erzeugt für eine Einkommensstufe Datensätze für alle KFB-Werte.
   Lohnsteuer: aus vollem Einkommen (§ 32a EStG).
-  SolZ + KiSt: aus KFB-reduziertem Einkommen (adjusted_income = Brutto − KFB × 50 €).
+  SolZ + KiSt: auf Basis JBMG (Zweidurchlauf-Verfahren mit KFB nach PAP MZTABFB).
 
 generate_2026_tax_table(
     income_min=1000,
@@ -229,13 +236,13 @@ Output:   Path-Konvertierung, Verzeichnis-Erstellung
 
 ## 🧮 Tariflogik
 
-Die fachliche Logik ist jetzt zweistufig aufgebaut:
+Die fachliche Logik ist dreistufig aufgebaut:
 
 1. **Jahres-Registry** in `available_tax_years.py`
-2. **Jahresabhängige Daten** in `tax_data_2026.py`
-3. **Jahresunabhängige Berechnung** in `tax_engine.py`
+2. **PAP-Parser** in `lohnsteuer_integration.py` (liest XML, berechnet Steuer für alle Jahre)
+3. **Universeller Generator** in `generate_tax_tables_universal.py` (delegiert an PAP-Parser oder Legacy)
 
-Damit lässt sich ein neues Jahr künftig vorbereiten, ohne die komplette Export- und GUI-Logik zu duplizieren.
+Für 2026 steht zusätzlich der Legacy-Pfad (über `_legacy/tax_engine.py`) zur Verfügung, gesteuert durch `TAX_ENGINE_2026_AVAILABLE` in `generate_tax_tables_universal.py`.
 
 ### Aktivierungspfad für ein neues Jahr (Beispiel 2027)
 
@@ -276,13 +283,23 @@ Zone 5: ab 277.826 €
 | 5 | Kein GFB/kein AN-Pauschbetrag; Berechnung über $zvE +$ Grundfreibetrag |
 | 6 | Wie SK 5, zusätzlich ohne Vorsorgepauschale |
 
-### Kinderfreibetrag (KFB)
+### Kinderfreibetrag (KFB) – PAP MZTABFB
 
-**Vereinfachte Modellierung:**
+Der KFB wird nach dem offiziellen BMF-PAP, Funktion **MZTABFB**, berechnet:
 
-- 1 KFB ≈ 50 € monatlich Einkommensreduktion
-- KFB wird von Einkommen abgezogen vor Steuerberechnung
-- Werte: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4
+| SK | KFB-Jahresbetrag (2026) |
+| -- | ----------------------- |
+| 1, 2, 3 | `int(ZKF × 9.756 €)` |
+| 4 | `int(ZKF × 4.878 €)` |
+| 5, 6 | 0 € |
+
+**Zweidurchlauf-Verfahren (§ 39b i. V. m. § 51a EStG):**
+
+- `LSTJAHR` (Lohnsteuer) wird **ohne** KFB-Abzug berechnet
+- `JBMG` (Jahressteuer nach § 51a EStG) wird mit KFB-Abzug berechnet
+- SolZ und Kirchensteuer basieren auf **JBMG**, nicht auf LSTJAHR
+
+Werte für ZKF: 0; 0,5; 1,0; 1,5; 2,0; 2,5; 3,0; 3,5; 4,0
 
 ---
 
@@ -398,7 +415,7 @@ python tax_table_gui.py
 # - Standard-Einstellungen → OK
 # - Min > Max → Fehler erwartung
 # - Ungültige Schrittweite → Fehler erwartung
-# - Fehlende BMF-Daten (z.B. Jahr 2025) → Warnung + Abbruch
+# - Fehlende BMF-Daten (z. B. Jahr 2025) → Warnung + Abbruch
 ```
 
 ### Unit-Tests (künftig)
@@ -425,7 +442,7 @@ def test_annual_tax_high_income():
 - Excel schreiben: ~2–3 Sekunden
 - **Gesamt GUI:** ~6–8 Sekunden (sichtbar im Status)
 
-Bei größeren Bereichen (z.B. 1000–100000, Schritt 3):
+Bei größeren Bereichen (z. B. 1000–100000, Schritt 3):
 
 - Datensätze: ~1,6 Mio
 - Zeit: 60–90 Sekunden (progressbar wünschenswert)
@@ -471,7 +488,7 @@ pip install pandas openpyxl --upgrade
 
 Das ist normal bei sehr großen Tabellen (>50 Mio. Datensätze).
 
-**Workaround:** Schrittweite erhöhen (z.B. 50 € statt 5 €).
+**Workaround:** Schrittweite erhöhen (z. B. 50 € statt 5 €).
 
 ### Problem: Icon wird nicht angezeigt
 
@@ -524,7 +541,7 @@ Entwickler können eigene EXE bauen oder im Python-Modus arbeiten.
 
    Ausgabe in Release-Notes dokumentieren.
 
-3. **Versionsnummer** in Dateinamen (z.B. `Lohnsteuertabellen-Ersteller_v1.0.exe`)
+3. **Versionsnummer** in Dateinamen (z. B. `Lohnsteuertabellen-Ersteller_v1.0.exe`)
 
 ---
 
@@ -645,11 +662,11 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 
 ### Geplant
 
-1. **Weitere Jahrgänge:** Wenn BMF-Formeln verfügbar (z.B. 2027 f.)
+1. **Weitere Jahrgänge:** Wenn BMF-Formeln verfügbar (z. B. 2027 f.)
 2. **Fortschrittsanzeige:** Bei längeren Generierungen
 3. **Export-Formate:** CSV, JSON zusätzlich zu Excel
 4. **Historische Vergleiche:** Mehrere Jahre in einer Datei
-5. **Keyboard-Shortcuts:** z.B. Alt+R für Reset, Ctrl+S für Speichern
+5. **Keyboard-Shortcuts:** z. B. Alt+R für Reset, Ctrl+S für Speichern
 
 ### Technische Schulden
 
@@ -663,8 +680,8 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 ## 🐛 Bekannte Limitierungen
 
 1. **Steuerklassenlogik vereinfacht:** Orientierung am Grundtarif mit praxisnahen Sonderregeln (Splitting, SK5/SK6-Anpassungen)
-2. **KFB-Modell:** Linear vereinfacht (50 €/KFB), nicht alle Feinheiten
-3. **Keine Lohn-Grenzen:** Z.B. Mindestlohn, Gleitzone nicht berücksichtigt
+2. **KFB/Jahresveranlagung:** Laufende Berechnung folgt PAP (MZTABFB/MBERECH); die vollständige Günstigerprüfung (Kindergeld vs. KFB) bleibt dem Jahresausgleich vorbehalten
+3. **Keine Lohn-Grenzen:** z. B. Mindestlohn, Gleitzone nicht berücksichtigt
 4. **GUI Single-Thread:** Lange Generierungen können UI einfrieren (60+ Sek)
 5. **Keine Abbruch-Option:** Laufende Generierung kann nicht unterbrochen werden
 
@@ -684,8 +701,8 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 
 ---
 
-**Version:** 1.1.1  
-**Stand:** 10.05.2026  
+**Version:** 1.1.7  
+**Stand:** 17.05.2026  
 **Autor:** GoroTech  
 **Lizenz:** Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.  
 **Zielentwickler:** Python 3.8+

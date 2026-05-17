@@ -38,6 +38,9 @@ TAX_PARAMS_2026 = {
     "pv_an_satz": 0.0180,
     "bbg_rv": 89400,
     "bbg_kv": 66150,
+    # Kinderfreibetrag-Faktoren gemaess PAP MZTABFB
+    "kfb_faktor_sk123": 9756,  # ZKF * 9756 fuer SK 1, 2, 3 (2026)
+    "kfb_faktor_sk4": 4878,    # ZKF * 4878 fuer SK 4 (= Hälfte von SK 1/2/3)
 }
 
 KFB_VALUES_2026 = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]

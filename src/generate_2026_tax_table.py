@@ -15,6 +15,12 @@ from typing import List, Optional
 
 import pandas as pd
 
+try:
+    import xlsxwriter  # type: ignore  # noqa: F401
+    XLSXWRITER_AVAILABLE = True
+except ImportError:
+    XLSXWRITER_AVAILABLE = False
+
 from tax_year_config import (
     TAX_YEAR,
     get_generation_title,
@@ -112,7 +118,18 @@ def write_excel_file(
     main_sheet = main_sheet or default_main_sheet
     raw_sheet = raw_sheet or default_raw_sheet
 
-    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+    writer_kwargs = {}
+    if XLSXWRITER_AVAILABLE:
+        writer_kwargs["engine"] = "xlsxwriter"
+        writer_kwargs["engine_kwargs"] = {
+            "options": {
+                "strings_to_urls": False,
+            }
+        }
+    else:
+        writer_kwargs["engine"] = "openpyxl"
+
+    with pd.ExcelWriter(output_path, **writer_kwargs) as writer:
         wide_df.to_excel(writer, sheet_name=main_sheet, index=False)
         raw_df.to_excel(writer, sheet_name=raw_sheet, index=False)
     

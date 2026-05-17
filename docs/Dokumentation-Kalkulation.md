@@ -130,18 +130,16 @@ Die **Milderungszone** stellt sicher, dass der Einstieg in den SolZ gleitend erf
 
 $$L^* = \frac{0{,}119}{0{,}119 - 0{,}055} \times F_\text{Freigrenze} \approx 1{,}859 \times F_\text{Freigrenze}$$
 
-| SK | Freigrenze | Voller SolZ ab Jahres-Lohnsteuer |
-| -- | ---------- | -------------------------------- |
-| I, II, IV–VI | 20.350 € | ≈ 37.841 € |
-| III | 40.700 € | ≈ 75.681 € |
+- **SK I, II, IV–VI:** Freigrenze **20.350 €**, voller SolZ ab Jahres-Lohnsteuer von ca. **37.841 €**
+- **SK III:** Freigrenze **40.700 €**, voller SolZ ab Jahres-Lohnsteuer von ca. **75.681 €**
 
 ### Praxiswerte (Näherung, SK I/West 2026)
 
-| Bruttoentgelt/Monat | Jahres-Lohnsteuer (ca.) | SolZ |
-| ------------------- | ----------------------- | ---- |
-| ≤ ca. 6.700 €       | < 20.350 €              | **0 €** |
-| ca. 6.700–9.800 € | 20.350–37.841 € | Milderungszone |
-| > ca. 9.800 €       | > 37.841 €              | 5,5 % der Lohnsteuer |
+| Bruttoentgelt/Monat | Jahres-Lohnsteuer (ca.) | SolZ                  |
+| ------------------- | ----------------------- | --------------------- |
+| ≤ ca. 6.700 €       | < 20.350 €              | **0 €**               |
+| ca. 6.700–9.800 €   | 20.350–37.841 €         | Milderungszone        |
+| > ca. 9.800 €       | > 37.841 €              | 5,5 % der Lohnsteuer  |
 
 > **Hinweis SK VI:** Aufgrund der fehlenden Freibeträge gilt der SolZ für SK VI bereits ab ca. 4.800 €/Monat Bruttoentgelt.
 
@@ -150,26 +148,48 @@ $$L^* = \frac{0{,}119}{0{,}119 - 0{,}055} \times F_\text{Freigrenze} \approx 1{,
 ## 6. Kirchensteuer
 
 ```text
-KiSt = Lohnsteuer_KFB-bereinigt × 9 %     (Bayern, Baden-Württemberg: 8 %)
+KiSt = JBMG_monatlich × 9 %     (Bayern, Baden-Württemberg: 8 %)
 ```
 
 In der Tabelle wird einheitlich der Satz von **9 %** (West, ohne Bayern/BW) ausgewiesen.
 
-Die Bemessungsgrundlage für die Kirchensteuer ist – analog zum Solidaritätszuschlag – die Lohnsteuer, die sich auf das um den Kinderfreibetrag **reduzierte** Einkommen ergibt (nicht das volle Bruttoeinkommen). Dadurch sinkt die KiSt mit steigendem Kinderfreibetrag, was dem steuerlichen Grundsatz der Berücksichtigung des Kinderbetreuungsaufwands entspricht.
+Die Bemessungsgrundlage für die Kirchensteuer ist – analog zum Solidaritätszuschlag – die **Jahressteuer nach § 51a EStG (JBMG)**, also die Lohnsteuer, die sich nach Abzug des Kinderfreibetrags vom zvE ergibt. Mit steigendem KFB sinkt daher auch die Kirchensteuer, was dem steuerlichen Grundsatz der Kinderberücksichtigung entspricht.
 
 ---
 
 ## 7. Kinderfreibetrag (KFB)
 
-Der KFB wird vereinfacht als **monatliche Einkommensminderung** modelliert:
+Der KFB wird nach dem **BMF-Programmablaufplan (PAP), Funktion MZTABFB** berechnet.
+
+### KFB-Jahresbetrag je Steuerklasse
+
+- **SK I, II, III:** bis zu **39.024 €** (bei ZKF=4), Formel: `KFB = int(ZKF × 9.756 €)`
+- **SK IV:** bis zu **19.512 €** (bei ZKF=4), Formel: `KFB = int(ZKF × 4.878 €)`
+- **SK V, VI:** **0 €**
+
+`ZKF` = Zahl der Kinderfreibeträge (0; 0,5; 1,0; 1,5; …; 4,0)
+
+### Zweidurchlauf-Verfahren (§ 39b i. V. m. § 51a EStG)
+
+Der KFB wird **nicht** von der regulären Lohnsteuer (LSTLZZ) abgezogen. Es werden zwei Steuerbeträge ermittelt:
+
+| Größe | Beschreibung | Verwendung |
+| ----- | ------------ | ---------- |
+| **LSTJAHR** | Jahres-Lohnsteuer ohne KFB-Abzug | Einbehalt vom Arbeitnehmer |
+| **JBMG** | Jahressteuer nach § 51a EStG *mit* KFB-Abzug | Bemessungsgrundlage für SolZ und KiSt |
 
 ```text
-Reduziertes Einkommen = Brutto − KFB × 50 €/Monat
+ZVE_normal = Brutto_Jahr − ZTABFB − VSP
+LSTJAHR   = UPTAB(ZVE_normal)             ← keine Änderung durch KFB
+
+ZVE_§51a  = ZVE_normal − KFB
+JBMG      = UPTAB(ZVE_§51a)              ← niedrigere Bemessungsgrundlage
+
+SolZ_Jahr = min(JBMG × 5,5 %, (JBMG − SOLZFREI) × 11,9 %)
+KiSt_Mon  = JBMG / 12 × 9 %
 ```
 
-Tatsächlich wird der Kinderfreibetrag (je Kind: 6.672 €/Jahr für beide Elternteile) erst im Rahmen der Jahresveranlagung mit dem Kindergeld verrechnet (Günstigerprüfung). Die Tabelle zeigt daher eine Näherung für den monatlichen Lohnsteuereinbehalt.
-
-Das reduzierte Einkommen bildet die Bemessungsgrundlage für **SolZ** und **Kirchensteuer** – die Lohnsteuer selbst wird stets aus dem vollen Bruttoeinkommen berechnet (§ 32a EStG, keine laufende Berücksichtigung des KFB bei der Lohnsteuer).
+Damit sinken SolZ und Kirchensteuer mit wachsendem KFB, während die Lohnsteuer selbst unverändert bleibt. Die echte Günstigerprüfung (Kindergeld vs. KFB) findet erst im Rahmen der Jahresveranlagung statt.
 
 ---
 
@@ -191,7 +211,7 @@ Das reduzierte Einkommen bildet die Bemessungsgrundlage für **SolZ** und **Kirc
 | ------------- | ---------- |
 | Vorsorgepauschale: direkte AN-Beitragssumme statt vollständigem BMF-PAP | Geringe Abweichung bei Grenzeinkommen; unterschätzt i. d. R. die VSP leicht |
 | SolZ mit Freigrenze (20.350 €/40.700 €) und Milderungszone (11,9 %) | Korrekte Umsetzung gemäß §§ 3, 4 SolZG 1995; für die meisten AN entfällt der SolZ vollständig |
-| KFB als pauschale Einkommensminderung | Nur Näherungswert; echte Günstigerprüfung erfolgt im Jahresausgleich; beeinflusst nur SolZ und KiSt, nicht die Lohnsteuer |
+| KFB nach PAP MZTABFB (ZKF × Jahresfaktor) | Korrekte PAP-Umsetzung; LSTLZZ unverändert, SolZ und KiSt basieren auf JBMG (§ 51a EStG); echte Günstigerprüfung erfolgt im Jahresausgleich |
 | Kirchensteuer einheitlich 9 % | In Bayern und BW gilt 8 %; keine individuelle Konfessionsauswahl |
 | Keine Berücksichtigung von Altersentlastungsbetrag, Versorgungsfreibetrag etc. | Tabelle gilt für reguläre Arbeitnehmer ohne Versorgungsbezüge |
 

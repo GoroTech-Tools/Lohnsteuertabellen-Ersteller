@@ -96,6 +96,42 @@ def calculate_church_tax(lohnsteuer: float, rate: float = 0.09) -> float:
 
 
 
+def _calculate_jbmg(
+    annual_income: float,
+    tax_class: int,
+    kfb_annual: int,
+    tax_params: TaxParams,
+) -> float:
+    """
+    Berechnet die Jahressteuer nach § 51a EStG (JBMG).
+
+    JBMG ist die Bemessungsgrundlage fuer Solidaritaetszuschlag und Kirchensteuer.
+    Gegenueber LSTJAHR wird zusaetzlich das Kinderfreibetrag-Jahresvolumen (kfb_annual)
+    vom zu versteuernden Einkommen abgezogen.
+    """
+    p = tax_params
+    ap = p["arbeitnehmer_pauschbetrag"]
+    so = p["sonderausgaben_pauschbetrag"]
+    vsp = vorsorgepauschale(annual_income, p)
+
+    if tax_class == 3:
+        zvE = max(0.0, annual_income - ap - so - vsp - kfb_annual)
+        return max(0.0, round(2.0 * grundtarif(zvE / 2, p)))
+    elif tax_class == 2:
+        zvE = max(0.0, annual_income - ap - so - vsp - p["entlastungsbetrag_alleinerziehend"] - kfb_annual)
+        return max(0.0, round(grundtarif(zvE, p)))
+    elif tax_class == 5:
+        zvE = max(0.0, annual_income - so - vsp - kfb_annual)
+        return max(0.0, round(grundtarif(zvE + p["grundfreibetrag"], p)))
+    elif tax_class == 6:
+        zvE = max(0.0, annual_income - so - kfb_annual)
+        return max(0.0, round(grundtarif(zvE + p["grundfreibetrag"], p)))
+    else:  # SK 1, 4
+        zvE = max(0.0, annual_income - ap - so - vsp - kfb_annual)
+        return max(0.0, round(grundtarif(zvE, p)))
+
+
+
 def generate_tax_records_for_year(
     monthly_income: float,
     tax_class: int,
@@ -105,14 +141,34 @@ def generate_tax_records_for_year(
 ) -> list[dict[str, float]]:
     """Erzeugt Rohdatensätze für eine Einkommensstufe und Steuerklasse."""
     records: list[dict[str, float]] = []
+    p = tax_params
 
     for kfb in kfb_values:
-        kfb_monthly_reduction = kfb * 50
-        adjusted_income = max(0, monthly_income - kfb_monthly_reduction)
+        # LSTLZZ: Jahreslohnsteuer OHNE KFB-Abzug (§ 39b Abs. 2 EStG)
+        lohnsteuer, _ = calculate_monthly_tax_for_year(monthly_income, tax_class, p)
 
-        lohnsteuer, _ = calculate_monthly_tax_for_year(monthly_income, tax_class, tax_params)
-        lohnsteuer_adjusted, solz = calculate_monthly_tax_for_year(adjusted_income, tax_class, tax_params)
-        kist = calculate_church_tax(lohnsteuer_adjusted, rate=church_tax_rate)
+        # KFB-Jahresbetrag gemaess PAP MZTABFB
+        if tax_class in (1, 2, 3):
+            kfb_annual = int(kfb * p.get("kfb_faktor_sk123", 9756))
+        elif tax_class == 4:
+            kfb_annual = int(kfb * p.get("kfb_faktor_sk4", 4878))
+        else:  # SK 5, 6
+            kfb_annual = 0
+
+        # JBMG: Jahressteuer nach § 51a EStG (mit KFB-Abzug)
+        jbmg = _calculate_jbmg(monthly_income * 12, tax_class, kfb_annual, p)
+
+        # SolZ: Bemessungsgrundlage ist JBMG (nicht LSTJAHR)
+        freigrenze = p["solz_freigrenze_splitting"] if tax_class == 3 else p["solz_freigrenze_einzel"]
+        if jbmg <= freigrenze:
+            solz = 0.0
+        else:
+            full_solz   = p["solidarity_rate"] * jbmg
+            milderung   = p["solidarity_milderung"] * (jbmg - freigrenze)
+            solz = round(min(full_solz, milderung) / 12, 2)
+
+        # Kirchensteuer: Bemessungsgrundlage ist ebenfalls JBMG
+        kist = round(jbmg / 12 * church_tax_rate, 2)
 
         records.append(
             {
@@ -120,8 +176,8 @@ def generate_tax_records_for_year(
                 "Steuerklasse": tax_class,
                 "Kinderfreibetrag": kfb,
                 "Lohnsteuer": round(lohnsteuer, 2),
-                "SolZ": round(solz, 2),
-                "Kirchensteuer_9%": round(kist, 2),
+                "SolZ": solz,
+                "Kirchensteuer_9%": kist,
             }
         )
 

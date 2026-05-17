@@ -197,6 +197,6 @@ Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.
 
 ---
 
-**Version:** 1.1.1  
-**Stand:** 10.05.2026  
+**Version:** 1.1.7  
+**Stand:** 17.05.2026  
 **Autor:** GoroTech

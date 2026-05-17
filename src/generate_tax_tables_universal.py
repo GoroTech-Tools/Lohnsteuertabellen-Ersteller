@@ -13,7 +13,8 @@ Nutzung:
     df = generate_tax_table_universal(year=2025, income_min=1000, income_max=10000)
 """
 
-from typing import List, Dict, Optional, Tuple
+from functools import lru_cache
+from typing import List, Dict, Optional, Tuple, Any
 from pathlib import Path
 import pandas as pd
 import sys
@@ -29,10 +30,31 @@ except ImportError:
     PAP_PARSER_AVAILABLE = False
 
 
+try:
+    from _legacy.tax_data_2026 import TAX_PARAMS_2026
+    from _legacy.tax_engine import calculate_monthly_tax_for_year, generate_tax_records_for_year
+    TAX_ENGINE_2026_AVAILABLE = True
+except ImportError:
+    TAX_ENGINE_2026_AVAILABLE = False
+
+
+@lru_cache(maxsize=1)
+def get_shared_pap_parser() -> Any:
+    """Erzeugt genau eine PAPParser-Instanz für wiederholte Tabellenläufe."""
+    if not PAP_PARSER_AVAILABLE:
+        raise RuntimeError(
+            "PAP-Parser nicht verfügbar. "
+            "Stelle sicher, dass lohnsteuer_integration.py importiert werden kann."
+        )
+
+    return PAPParser()
+
+
 def calculate_annual_tax_universal(
     annual_income: float,
     tax_class: int,
     year: int,
+    parser: Optional[Any] = None,
 ) -> Tuple[float, float]:
     """
     Berechnet Jahres-Lohnsteuer + SolZ für beliebiges Jahr (2006-2026+).
@@ -41,6 +63,14 @@ def calculate_annual_tax_universal(
     
     Rückgabe: (lohnsteuer_jahr, soli_jahr)
     """
+    if year == 2026 and TAX_ENGINE_2026_AVAILABLE:
+        monthly_tax, monthly_solidarity = calculate_monthly_tax_for_year(
+            annual_income / 12,
+            tax_class,
+            TAX_PARAMS_2026,
+        )
+        return monthly_tax * 12, monthly_solidarity * 12
+
     if not PAP_PARSER_AVAILABLE:
         raise RuntimeError(
             "PAP-Parser nicht verfügbar. "
@@ -48,8 +78,10 @@ def calculate_annual_tax_universal(
         )
     
     try:
+        if parser is None:
+            parser = get_shared_pap_parser()
+
         # PAPParser wird ohne Jahr initialisiert, Jahr wird in berechne_lohnsteuer übergeben
-        parser = PAPParser()
         result = parser.berechne_lohnsteuer(
             bruttolohn=annual_income / 12,  # Monatlich (lzz=2)
             steuerkl=tax_class,
@@ -79,6 +111,7 @@ def generate_tax_records_universal(
     tax_class: int,
     kfb_values: List[float],
     year: int,
+    parser: Optional[Any] = None,
 ) -> List[Dict]:
     """
     Generiert Datensätze für ein Einkommen, alle KFB-Werte.
@@ -86,32 +119,37 @@ def generate_tax_records_universal(
     Für PAP-Parser: wird direkt berechnet.
     Für tax_engine (2026): delegiert an generate_tax_records_for_year.
     """
+    if year == 2026 and TAX_ENGINE_2026_AVAILABLE:
+        return generate_tax_records_for_year(
+            monthly_income,
+            tax_class,
+            kfb_values,
+            TAX_PARAMS_2026,
+        )
+
     if is_pap_parser_enabled() and PAP_PARSER_AVAILABLE:
-        # PAP-Parser: Berechne für jedes KFB einzeln
+        if parser is None:
+            parser = get_shared_pap_parser()
+
+        # PAP-Parser: Berechne für jedes KFB einzeln mit korrektem ZKF-Parameter
         records = []
         for kfb in kfb_values:
-            # PAP kennt kein Kinderfreibetrag-Konzept; wir berechnen den Effekt
-            # durch reduziertes zvE (vereinfacht: KFB ist Prozent Reduktion)
-            reduced_income = monthly_income * (1 - kfb / 100) if kfb > 0 else monthly_income
-            ls, solz = calculate_annual_tax_universal(reduced_income * 12, tax_class, year)
-            
+            result = parser.berechne_lohnsteuer(
+                bruttolohn=monthly_income,
+                jahr=year,
+                steuerkl=tax_class,
+                lzz=2,  # Monat
+                zkf=kfb,
+            )
             records.append({
                 "Einkommen_EUR": monthly_income,
                 "Steuerklasse": tax_class,
                 "Kinderfreibetrag": kfb,
-                "Lohnsteuer": ls / 12,  # Monatlich
-                "SolZ": solz / 12,  # Monatlich
-                "Kirchensteuer_9%": (ls / 12) * 0.09,
+                "Lohnsteuer": result["lohnsteuer"],
+                "SolZ": result["soli"],
+                "Kirchensteuer_9%": result["kirchensteuer_basis"] * 0.09,
             })
         return records
-    
-    # Fallback: tax_engine (nur 2026)
-    if year == 2026 and TAX_ENGINE_2026_AVAILABLE:
-        try:
-            from generate_2026_tax_table import generate_tax_records
-            return generate_tax_records(monthly_income, tax_class, kfb_values)
-        except Exception:
-            pass
     
     raise RuntimeError(f"Keine Datensatz-Generierung für Jahr {year} möglich.")
 
@@ -143,11 +181,16 @@ def generate_tax_table_universal(
         kfb_values = get_kfb_values_for_year(year)
     
     all_records = []
+    parser = get_shared_pap_parser() if (is_pap_parser_enabled() and PAP_PARSER_AVAILABLE) else None
     income = income_min
     while income <= income_max + 0.01:  # Floating-point tolerance
         for tax_class in tax_classes:
             records = generate_tax_records_universal(
-                income, tax_class, kfb_values, year
+                income,
+                tax_class,
+                kfb_values,
+                year,
+                parser=parser,
             )
             all_records.extend(records)
         income += step
