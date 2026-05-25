@@ -157,10 +157,10 @@ class TaxTableGui(tk.Tk):
         help_frame.columnconfigure(0, weight=1)
         help_frame.columnconfigure(1, weight=1)
 
-        user_manual_btn = ttk.Button(help_frame, text="? Dokumentation", command=self._open_user_manual)
+        user_manual_btn = ttk.Button(help_frame, text="? Anwender-Doku", command=self._open_user_manual)
         user_manual_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
 
-        tech_docs_btn = ttk.Button(help_frame, text="? Technische Doku", command=self._open_tech_docs)
+        tech_docs_btn = ttk.Button(help_frame, text="? Technik-Doku", command=self._open_tech_docs)
         tech_docs_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
 
         status_label = ttk.Label(root_frame, textvariable=self.status_var)
