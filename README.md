@@ -142,7 +142,7 @@ Die mit diesem Tool erstellten Lohnsteuertabellen sind für die Nutzung innerhal
 Nach jedem erfolgreichen Build wird zusätzlich zur EXE automatisch ein ZIP-Release erzeugt.
 
 - **Pfad:** `release/Lohnsteuertabellen-Ersteller_<Version>.zip`
-- **Inhalt:** `Lohnsteuertabellen-Ersteller.exe` + komplettes Verzeichnis `docs/`
+- **Inhalt:** `Lohnsteuertabellen-Ersteller.exe` + komplette Verzeichnisse `docs/` und `data/`
 - **Release Notes:** `release/RELEASE_NOTES_<Version_als_Underscore>.md` (wird automatisch angelegt/aktualisiert)
 
 Damit steht für die Verteilung immer ein kompaktes Paket mit Anwendung und Dokumentation bereit.

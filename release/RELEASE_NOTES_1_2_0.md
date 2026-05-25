@@ -11,5 +11,6 @@
 ## Hinweise
 
 - Diese Datei wird standardmäßig durch `src/build_exe.py` im Verzeichnis `release/` aktualisiert.
+- ZIP-Inhalt: `Lohnsteuertabellen-Ersteller.exe` + komplette Verzeichnisse `docs/` und `data/`.
 - Technik-Doku: `docs/DOKUMENTATION_TECHNIK.md`
 - Anwender-Doku: `docs/DOKUMENTATION_ANWENDER.md`
