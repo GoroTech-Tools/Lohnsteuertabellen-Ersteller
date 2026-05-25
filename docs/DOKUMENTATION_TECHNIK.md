@@ -223,7 +223,7 @@ Row 2: Einkommen min → Entry
 Row 3: Einkommen max → Entry
 Row 4: Ausgabedatei → Entry + Button "Durchsuchen…"
 Row 5: [Buttons] Zurücksetzen | Tabelle erstellen
-Row 6: [Buttons] Anwender-Doku | Technische Doku
+Row 6: [Buttons] Anwender-Doku | Technik-Doku
 Row 7: Status-Label
 ```
 

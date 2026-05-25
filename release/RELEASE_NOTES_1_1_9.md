@@ -11,5 +11,5 @@
 ## Hinweise
 
 - Diese Datei wird standardmäßig durch `src/build_exe.py` im Verzeichnis `release/` aktualisiert.
-- Technische Doku: `docs/DOKUMENTATION_TECHNIK.md`
-- Anwenderdoku: `docs/DOKUMENTATION_ANWENDER.md`
+- Technik-Doku: `docs/DOKUMENTATION_TECHNIK.md`
+- Anwender-Doku: `docs/DOKUMENTATION_ANWENDER.md`

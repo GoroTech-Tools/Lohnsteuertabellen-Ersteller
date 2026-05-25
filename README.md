@@ -182,8 +182,8 @@ A: Im Moment nicht. Fenster schließen beendet den Prozess (bei langen Tabellen 
 ## 📞 Support & Entwicklung
 
 - **Projekt:** GitHub-Repository
-- **Anwenderdoku:** `docs/DOKUMENTATION_ANWENDER.md`
-- **Dokumentation:** `docs/DOKUMENTATION_TECHNIK.md` für Entwickler
+- **Anwender-Doku:** `docs/DOKUMENTATION_ANWENDER.md`
+- **Technik-Doku:** `docs/DOKUMENTATION_TECHNIK.md` für Entwickler
 - **Issues/Fehler:** In Repository posten
 
 ## 📄 Lizenz
