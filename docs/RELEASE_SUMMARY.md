@@ -24,8 +24,8 @@
 - `src/_legacy/tax_data_2026.py` — Neue Keys `kfb_faktor_sk123: 9756` und `kfb_faktor_sk4: 4878`
 - `src/lohnsteuer_integration.py` — Neuer Parameter `zkf`, korrekte UPTAB-Implementierung je Jahr, JBMG-Zweidurchlauf, SOLZFREI aus XML
 - `src/generate_tax_tables_universal.py` — PAP-Pfad nutzt `berechne_lohnsteuer(zkf=kfb)` und `kirchensteuer_basis`
-- `docs/Dokumentation-Kalkulation.md` — Abschnitte 6, 7, 9 aktualisiert
-- `docs/Dokumentation-Technik.md` — Modulstruktur und KFB-Abschnitt aktualisiert
+- `docs/DOKUMENTATION_KALKULATION.md` — Abschnitte 6, 7, 9 aktualisiert
+- `docs/DOKUMENTATION_TECHNIK.md` — Modulstruktur und KFB-Abschnitt aktualisiert
 
 ---
 

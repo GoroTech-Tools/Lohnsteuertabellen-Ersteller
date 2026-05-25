@@ -17,6 +17,7 @@ debug_log.txt
 
 # Packaged releases
 *.zip
+release/
 
 # OS/editor
 .DS_Store

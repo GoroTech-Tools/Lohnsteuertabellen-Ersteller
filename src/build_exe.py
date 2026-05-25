@@ -90,7 +90,7 @@ def update_markdown_version(file_path: Path, version_text: str, stand_text: str)
 
 
 def regenerate_embedded_docs(readme_file: Path, tech_doc_file: Path, embedded_docs_file: Path) -> None:
-    """Generiere embedded_docs.py aus docs/Liesmich.txt und docs/Dokumentation-Technik.md."""
+    """Generiere embedded_docs.py aus docs/LIESMICH.TXT und docs/DOKUMENTATION_TECHNIK.md."""
     readme_b64 = base64.b64encode(readme_file.read_bytes()).decode("ascii")
     tech_b64 = base64.b64encode(tech_doc_file.read_bytes()).decode("ascii")
 
@@ -104,10 +104,10 @@ import base64
 from pathlib import Path
 import tempfile
 
-# Liesmich.txt (Anwender-Dokumentation) - jetzt aus docs/
+# LIESMICH.TXT (Anwender-Dokumentation) - jetzt aus docs/
 README_B64 = "{readme_b64}"
 
-# Dokumentation-Technik.md (Entwickler-Dokumentation)
+# DOKUMENTATION_TECHNIK.md (Entwickler-Dokumentation)
 TECH_DOC_B64 = "{tech_b64}"
 
 
@@ -144,9 +144,9 @@ def get_temp_doc_path(which: str) -> Path:
     temp_dir.mkdir(exist_ok=True)
 
     if which.lower() == 'readme':
-        temp_file = temp_dir / "Liesmich.txt"
+        temp_file = temp_dir / "LIESMICH.TXT"
     else:
-        temp_file = temp_dir / "Dokumentation-Technik.md"
+        temp_file = temp_dir / "DOKUMENTATION_TECHNIK.md"
 
     temp_file.write_text(content, encoding='utf-8')
     return temp_file
@@ -251,8 +251,8 @@ def build_exe():
     gui_file = src_dir / "tax_table_gui.py"
     embedded_docs_file = src_dir / "embedded_docs.py"
     icon_file = src_dir / "app_icon.ico"
-    docs_readme_file = docs_dir / "Liesmich.txt"
-    docs_tech_file = docs_dir / "Dokumentation-Technik.md"
+    docs_readme_file = docs_dir / "LIESMICH.TXT"
+    docs_tech_file = docs_dir / "DOKUMENTATION_TECHNIK.md"
     pap_xml_dir = root_dir / "data" / "pap_xml"
     build_dir = root_dir / "build"
     dist_dir = root_dir / "dist"

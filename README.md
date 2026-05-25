@@ -181,12 +181,21 @@ A: Im Moment nicht. Fenster schließen beendet den Prozess (bei langen Tabellen 
 ## 📞 Support & Entwicklung
 
 - **Projekt:** GitHub-Repository
-- **Dokumentation:** `Technische Dokumentation.md` für Entwickler
+- **Dokumentation:** `docs/DOKUMENTATION_TECHNIK.md` für Entwickler
 - **Issues/Fehler:** In Repository posten
 
 ## 📄 Lizenz
 
 Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.
+
+## 🧾 Markdown-Standard
+
+Im Repository gelten für Markdown-Dateien verbindlich:
+
+- **MD022**: Vor und nach jeder Überschrift genau eine Leerzeile.
+- **MD032**: Vor und nach Listen genau eine Leerzeile.
+
+Die Regeln sind in `.markdownlint.json` hinterlegt.
 
 ## 🗒️ Änderungsstand
 

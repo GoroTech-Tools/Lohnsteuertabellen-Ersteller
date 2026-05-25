@@ -5,21 +5,22 @@
 #   2) Build via src\build_exe.py starten
 #
 # Aufruf:
-#   .\build.ps1
-#   .\build.ps1 -SkipSetup
+#   .\src\build.ps1
+#   .\src\build.ps1 -SkipSetup
 param(
     [switch]$SkipSetup
 )
 
 $ErrorActionPreference = "Stop"
-$repo = Split-Path $PSScriptRoot -Leaf
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$repo = Split-Path $projectRoot -Leaf
 
 # Immer im Projektroot arbeiten
-Set-Location $PSScriptRoot
+Set-Location $projectRoot
 
-$venvPython = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+$venvPython = Join-Path $projectRoot ".venv\Scripts\python.exe"
 $setupScript = Join-Path $PSScriptRoot "setup.ps1"
-$buildScript = Join-Path $PSScriptRoot "src\build_exe.py"
+$buildScript = Join-Path $PSScriptRoot "build_exe.py"
 
 if (-not (Test-Path $buildScript)) {
     throw "Build-Skript nicht gefunden: $buildScript"
@@ -28,19 +29,19 @@ if (-not (Test-Path $buildScript)) {
 if (-not $SkipSetup) {
     if (-not (Test-Path $venvPython)) {
         if (-not (Test-Path $setupScript)) {
-            throw "Weder .venv noch setup.ps1 gefunden. Erwartet: $venvPython und/oder $setupScript"
+            throw "Weder .venv noch src\\setup.ps1 gefunden. Erwartet: $venvPython und/oder $setupScript"
         }
 
-        Write-Host "[$repo] .venv fehlt — führe setup.ps1 aus ..."
+        Write-Host "[$repo] .venv fehlt — führe src\\setup.ps1 aus ..."
         & $setupScript
         if ($LASTEXITCODE -ne 0) {
-            throw "setup.ps1 fehlgeschlagen (Exit-Code $LASTEXITCODE)."
+            throw "src\\setup.ps1 fehlgeschlagen (Exit-Code $LASTEXITCODE)."
         }
     }
 }
 
 if (-not (Test-Path $venvPython)) {
-    throw "Python aus .venv nicht gefunden: $venvPython`nTipp: zuerst .\setup.ps1 ausführen oder build.ps1 ohne -SkipSetup starten."
+    throw "Python aus .venv nicht gefunden: $venvPython`nTipp: zuerst .\\src\\setup.ps1 ausführen oder src\\build.ps1 ohne -SkipSetup starten."
 }
 
 Write-Host "[$repo] Starte Build über src\build_exe.py ..."

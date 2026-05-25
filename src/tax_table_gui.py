@@ -357,7 +357,7 @@ class TaxTableGui(tk.Tk):
         worker.start()
 
     def _open_user_manual(self) -> None:
-        """Öffnet die Anwender-Dokumentation (Liesmich.txt).
+        """Öffnet die Anwender-Dokumentation (LIESMICH.TXT).
         
         Versucht zuerst, die eingebettete Dokumentation zu verwenden (für EXE),
         fällt ansonsten auf Dateisystem zurück (für Entwicklung).
@@ -372,13 +372,13 @@ class TaxTableGui(tk.Tk):
                 # Fallback zu Dateisystem
                 pass
 
-        # Priorität 2: Dateisystem - ausschließlich docs/Liesmich.txt
-        readme_path = self.base_dir.parent / "docs" / "Liesmich.txt"
+        # Priorität 2: Dateisystem - ausschließlich docs/LIESMICH.TXT
+        readme_path = self.base_dir.parent / "docs" / "LIESMICH.TXT"
 
         if not readme_path.exists():
             messagebox.showwarning(
                 "Dokumentation nicht gefunden",
-                f"Liesmich.txt existiert nicht unter:\n  {self.base_dir.parent / 'docs' / 'Liesmich.txt'}\n\n" +
+                f"LIESMICH.TXT existiert nicht unter:\n  {self.base_dir.parent / 'docs' / 'LIESMICH.TXT'}\n\n" +
                 "Hinweis: Bei der EXE sollte die Dokumentation eingebettet sein."
             )
             return
@@ -403,12 +403,12 @@ class TaxTableGui(tk.Tk):
         
         # Priorität 2: Dateisystem
         root_dir = self.base_dir.parent
-        tech_docs = root_dir / "docs" / "Dokumentation-Technik.md"
+        tech_docs = root_dir / "docs" / "DOKUMENTATION_TECHNIK.md"
         
         if not tech_docs.exists():
             messagebox.showwarning(
                 "Dokumentation nicht gefunden",
-                f"Dokumentation-Technik.md existiert nicht unter:\n{tech_docs}\n\n" +
+                f"DOKUMENTATION_TECHNIK.md existiert nicht unter:\n{tech_docs}\n\n" +
                 "Hinweis: Bei der EXE sollte die Dokumentation eingebettet sein."
             )
             return

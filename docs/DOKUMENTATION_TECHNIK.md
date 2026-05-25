@@ -20,12 +20,16 @@ Lohnsteuertabellen-Ersteller/
 │       └── generate_2026_simple.py    # Einfacher 2026-Generator
 ├── data/
 │   └── pap_xml/                       # PAP-XML-Dateien (2006–2026, BMF)
-├── requirements.txt                   # Abhängigkeiten
+├── src/
+│   ├── requirements.txt               # Abhängigkeiten
+│   ├── setup.ps1                      # Setup-Skript
+│   ├── build.ps1                      # Build-Orchestrierung
+│   └── build_exe.py                   # PyInstaller-Build-Skript
 ├── docs/
-│   ├── Liesmich.txt                   # Anwender-Dokumentation
-│   ├── Dokumentation-Technik.md      # Diese Datei
-│   ├── Dokumentation-Kalkulation.md  # Formeln, Parameter, Besonderheiten
-│   ├── Lizenz.txt                     # Lizenztext
+│   ├── LIESMICH.TXT                   # Anwender-Dokumentation
+│   ├── DOKUMENTATION_TECHNIK.md      # Diese Datei
+│   ├── DOKUMENTATION_KALKULATION.md  # Formeln, Parameter, Besonderheiten
+│   ├── LIZENZ.TXT                     # Lizenztext
 │   ├── LOHNSTEUER_INTEGRATION.md     # PAP-Parser-Architektur
 │   └── LIZENZEN_UND_ATTRIBUTION.md   # Drittanbieter-Lizenzen
 ├── build/                             # (bei EXE-Build erstellt)
@@ -342,7 +346,7 @@ cd src
 python build_exe.py
 ```
 
-### Abhängigkeiten (requirements.txt im Projektroot)
+### Abhängigkeiten (src/requirements.txt)
 
 ```text
 pandas>=1.3.0
@@ -355,7 +359,7 @@ pyinstaller-hooks-contrib>=2022.0
 
 ```bash
 # 1. Abhängigkeiten installieren
-pip install -r requirements.txt
+pip install -r src/requirements.txt
 
 # 2. Build ausführen
 cd src
@@ -626,7 +630,7 @@ Die GUI zeigt das neue Jahr **automatisch** an – keine weiteren GUI-Änderunge
 
 ### Schritt 4 – Kalkulationsdokumentation aktualisieren
 
-In `docs/Dokumentation-Kalkulation.md` den Kopfbereich anpassen:
+In `docs/DOKUMENTATION_KALKULATION.md` den Kopfbereich anpassen:
 
 ```markdown
 **Rechtsgrundlage:** § 32a EStG in der Fassung ab Veranlagungszeitraum 2027
@@ -652,7 +656,7 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 - [ ] `py -3 -m available_tax_years --check <YYYY>` zeigt alle Checks als bestanden
 - [ ] `src/generate_<YYYY>_tax_table.py` angelegt (Wrapper analog zu 2026)
 - [ ] Jahr in `SUPPORTED_TAX_YEARS` in `available_tax_years.py` registriert
-- [ ] `docs/Dokumentation-Kalkulation.md` – Zahlenwerte aktualisiert
+- [ ] `docs/DOKUMENTATION_KALKULATION.md` – Zahlenwerte aktualisiert
 - [ ] Plausibilitätsprüfung: Ergebnis für ein Beispiel-Einkommen gegen BMF-Tabelle oder [bmf-steuerrechner.de](https://www.bmf-steuerrechner.de) geprüft
 - [ ] EXE neu gebaut und Release-ZIP erstellt
 
