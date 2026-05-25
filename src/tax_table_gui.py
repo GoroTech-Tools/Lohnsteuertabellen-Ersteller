@@ -357,8 +357,29 @@ class TaxTableGui(tk.Tk):
         worker.start()
 
     def _open_user_manual(self) -> None:
-        """Öffnet die Dokumentation (Alias auf technische Doku)."""
-        self._open_tech_docs()
+        """Öffnet die Anwender-Dokumentation."""
+        # Priorität 1: Embedded Documentation (für EXE)
+        if EMBEDDED_DOCS_AVAILABLE:
+            try:
+                user_doc_path = get_temp_doc_path('user')
+                self._open_doc_file(user_doc_path)
+                return
+            except Exception:
+                pass
+
+        # Priorität 2: Dateisystem
+        root_dir = self.base_dir.parent
+        user_docs = root_dir / "docs" / "DOKUMENTATION_ANWENDER.md"
+
+        if not user_docs.exists():
+            messagebox.showwarning(
+                "Dokumentation nicht gefunden",
+                f"DOKUMENTATION_ANWENDER.md existiert nicht unter:\n{user_docs}\n\n"
+                + "Hinweis: Bei der EXE sollte die Dokumentation eingebettet sein."
+            )
+            return
+
+        self._open_doc_file(user_docs)
 
     def _open_tech_docs(self) -> None:
         """Öffnet die Technische Dokumentation.

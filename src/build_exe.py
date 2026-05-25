@@ -89,8 +89,9 @@ def update_markdown_version(file_path: Path, version_text: str, stand_text: str)
     file_path.write_text(content, encoding="utf-8")
 
 
-def regenerate_embedded_docs(tech_doc_file: Path, embedded_docs_file: Path) -> None:
-    """Generiere embedded_docs.py aus docs/DOKUMENTATION_TECHNIK.md."""
+def regenerate_embedded_docs(user_doc_file: Path, tech_doc_file: Path, embedded_docs_file: Path) -> None:
+    """Generiere embedded_docs.py aus docs/DOKUMENTATION_ANWENDER.md und docs/DOKUMENTATION_TECHNIK.md."""
+    user_b64 = base64.b64encode(user_doc_file.read_bytes()).decode("ascii")
     tech_b64 = base64.b64encode(tech_doc_file.read_bytes()).decode("ascii")
 
     content = f'''# -*- coding: utf-8 -*-
@@ -103,6 +104,9 @@ import base64
 from pathlib import Path
 import tempfile
 
+# DOKUMENTATION_ANWENDER.md (Anwender-Dokumentation)
+USER_DOC_B64 = "{user_b64}"
+
 # DOKUMENTATION_TECHNIK.md (Entwickler-Dokumentation)
 TECH_DOC_B64 = "{tech_b64}"
 
@@ -111,12 +115,14 @@ def get_embedded_doc(which: str) -> str:
     """Dekodiere eingebettete Dokumentation.
 
     Args:
-        which: 'tech' (oder Legacy-Alias 'readme')
+        which: 'user'/'anwender' oder 'tech' (Legacy-Alias: 'readme')
 
     Returns:
         Dekodierter Text
     """
-    if which.lower() in {'readme', 'tech'}:
+    if which.lower() in {'user', 'anwender', 'readme'}:
+        return base64.b64decode(USER_DOC_B64).decode('utf-8')
+    elif which.lower() == 'tech':
         return base64.b64decode(TECH_DOC_B64).decode('utf-8')
     else:
         raise ValueError(f"Unbekannte Dokumentation: {{which}}")
@@ -126,7 +132,7 @@ def get_temp_doc_path(which: str) -> Path:
     """Schreibe Dokumentation in temporäre Datei und gebe Pfad zurück.
 
     Args:
-        which: 'tech' (oder Legacy-Alias 'readme')
+        which: 'user'/'anwender' oder 'tech' (Legacy-Alias: 'readme')
 
     Returns:
         Path zum temp file
@@ -137,7 +143,10 @@ def get_temp_doc_path(which: str) -> Path:
     temp_dir = Path(tempfile.gettempdir()) / "lohnsteuertabellen_docs"
     temp_dir.mkdir(exist_ok=True)
 
-    temp_file = temp_dir / "DOKUMENTATION_TECHNIK.md"
+    if which.lower() in {'user', 'anwender', 'readme'}:
+        temp_file = temp_dir / "DOKUMENTATION_ANWENDER.md"
+    else:
+        temp_file = temp_dir / "DOKUMENTATION_TECHNIK.md"
 
     temp_file.write_text(content, encoding='utf-8')
     return temp_file
@@ -227,6 +236,35 @@ def create_release_zip(
     return zip_file
 
 
+def write_release_notes(
+    release_dir: Path,
+    version_text: str,
+    stand_text: str,
+    build_stamp: str,
+    zip_file: Path,
+) -> Path:
+    """Schreibe/aktualisiere RELEASE_NOTES_<version>.md im release/-Ordner."""
+    notes_file = release_dir / f"RELEASE_NOTES_{version_text.replace('.', '_')}.md"
+    content = f'''# RELEASE_NOTES v{version_text}
+
+**Stand:** {stand_text}  
+**Build-Zeit:** {build_stamp}  
+
+## Artefakte
+
+- EXE: `dist/{PROJECT_NAME}.exe`
+- ZIP: `release/{zip_file.name}`
+
+## Hinweise
+
+- Diese Datei wird standardmäßig durch `src/build_exe.py` im Verzeichnis `release/` aktualisiert.
+- Technische Doku: `docs/DOKUMENTATION_TECHNIK.md`
+- Anwenderdoku: `docs/DOKUMENTATION_ANWENDER.md`
+'''
+    notes_file.write_text(content, encoding="utf-8")
+    return notes_file
+
+
 def build_exe():
     """Baut EXE mit PyInstaller."""
 
@@ -237,11 +275,12 @@ def build_exe():
     # Pfade
     src_dir = Path(__file__).resolve().parent
     root_dir = src_dir.parent
-    version_state_file = root_dir / VERSION_STATE_FILE_NAME
+    version_state_file = src_dir / VERSION_STATE_FILE_NAME
     docs_dir = root_dir / "docs"
     gui_file = src_dir / "tax_table_gui.py"
     embedded_docs_file = src_dir / "embedded_docs.py"
     icon_file = src_dir / "app_icon.ico"
+    docs_user_file = docs_dir / "DOKUMENTATION_ANWENDER.md"
     docs_tech_file = docs_dir / "DOKUMENTATION_TECHNIK.md"
     pap_xml_dir = root_dir / "data" / "pap_xml"
     build_dir = root_dir / "build"
@@ -257,8 +296,9 @@ def build_exe():
         print(f"❌ Fehler: {gui_file} nicht gefunden!")
         return 1
 
-    if not docs_tech_file.exists():
-        print("❌ Fehler: Technische Dokumentation fehlt in docs/!")
+    if not docs_user_file.exists() or not docs_tech_file.exists():
+        print("❌ Fehler: Dokumentationen fehlen in docs/!")
+        print(f"   Erwartet: {docs_user_file}")
         print(f"   Erwartet: {docs_tech_file}")
         return 1
 
@@ -271,10 +311,11 @@ def build_exe():
     build_dir.mkdir(parents=True, exist_ok=True)
 
     # Versions- und Stand-Aktualisierung in Doku
+    update_markdown_version(docs_user_file, version_text, stand_text)
     update_markdown_version(docs_tech_file, version_text, stand_text)
 
     # Embedded Docs aus aktualisierter Doku neu erzeugen
-    regenerate_embedded_docs(docs_tech_file, embedded_docs_file)
+    regenerate_embedded_docs(docs_user_file, docs_tech_file, embedded_docs_file)
 
     # Version-Resource-Datei für EXE erzeugen
     write_windows_version_file(version_file, version_tuple, version_text, build_stamp)
@@ -347,6 +388,7 @@ def build_exe():
         save_version_state(version_state_file, version_tuple, build_stamp)
         size_mb = exe_file.stat().st_size / (1024 * 1024)
         zip_file = create_release_zip(root_dir, docs_dir, exe_file, version_text)
+        notes_file = write_release_notes(root_dir / "release", version_text, stand_text, build_stamp, zip_file)
         zip_size_mb = zip_file.stat().st_size / (1024 * 1024)
         print()
         print("=" * 70)
@@ -355,6 +397,7 @@ def build_exe():
         print(f"EXE-Datei: {exe_file}")
         print(f"Größe: {size_mb:.1f} MB")
         print(f"Release-ZIP: {zip_file}")
+        print(f"Release-Notes: {notes_file}")
         print(f"ZIP-Größe: {zip_size_mb:.1f} MB")
         print(f"Build-Version: {version_text}")
         print()

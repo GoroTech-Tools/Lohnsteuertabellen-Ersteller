@@ -25,7 +25,10 @@ Lohnsteuertabellen-Ersteller/
 │   ├── setup.ps1                      # Setup-Skript
 │   ├── build.ps1                      # Build-Orchestrierung
 │   └── build_exe.py                   # PyInstaller-Build-Skript
+│   ├── version_state.json             # Persistenter Versionsstand
+│   └── .markdownlint.json             # Markdown-Lint-Regeln (MD022/MD032)
 ├── docs/
+│   ├── DOKUMENTATION_ANWENDER.md     # Anwender-Dokumentation
 │   ├── DOKUMENTATION_TECHNIK.md      # Diese Datei
 │   ├── DOKUMENTATION_KALKULATION.md  # Formeln, Parameter, Besonderheiten
 │   ├── LIZENZ.TXT                     # Lizenztext
@@ -220,7 +223,7 @@ Row 2: Einkommen min → Entry
 Row 3: Einkommen max → Entry
 Row 4: Ausgabedatei → Entry + Button "Durchsuchen…"
 Row 5: [Buttons] Zurücksetzen | Tabelle erstellen
-Row 6: [Buttons] Dokumentation | Technische Doku
+Row 6: [Buttons] Anwender-Doku | Technische Doku
 Row 7: Status-Label
 ```
 
@@ -704,7 +707,7 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 
 ---
 
-**Version:** 1.1.8  
+**Version:** 1.1.9  
 **Stand:** 25.05.2026  
 **Autor:** GoroTech  
 **Lizenz:** Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.  

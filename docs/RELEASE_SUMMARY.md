@@ -91,8 +91,8 @@ Lohnsteuertabellen-Ersteller/
 │   ├── LIZENZEN_UND_ATTRIBUTION.md
 │   └── _archive/
 │       └── LOHNSTEUER_INTEGRATION_QUICK.md
-├── version_state.json                    ← v1.1.1
-├── RELEASE_1_1_0.md                      ← Release Notes
+├── src/version_state.json                ← v1.1.1
+├── release/RELEASE_NOTES_1_1_0.md        ← Release Notes
 └── build.ps1                             ← Build-Entrypoint
 ```
 
@@ -169,7 +169,7 @@ Nur Jahr 2026
 
 ## 📄 Dokumentation
 
-- [RELEASE_1_1_0.md](RELEASE_1_1_0.md) — Release Notes
+- [release/RELEASE_NOTES_1_1_0.md](../release/RELEASE_NOTES_1_1_0.md) — Release Notes
 - [docs/LOHNSTEUER_INTEGRATION.md](docs/LOHNSTEUER_INTEGRATION.md) — Technische Details
 - [docs/LIZENZEN_UND_ATTRIBUTION.md](docs/LIZENZEN_UND_ATTRIBUTION.md) — PAP Attribution
 - [README.md](README.md) — Projekt-Übersicht

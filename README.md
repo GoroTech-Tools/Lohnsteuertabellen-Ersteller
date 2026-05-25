@@ -143,6 +143,7 @@ Nach jedem erfolgreichen Build wird zusätzlich zur EXE automatisch ein ZIP-Rele
 
 - **Pfad:** `release/Lohnsteuertabellen-Ersteller_<Version>.zip`
 - **Inhalt:** `Lohnsteuertabellen-Ersteller.exe` + komplettes Verzeichnis `docs/`
+- **Release Notes:** `release/RELEASE_NOTES_<Version_als_Underscore>.md` (wird automatisch angelegt/aktualisiert)
 
 Damit steht für die Verteilung immer ein kompaktes Paket mit Anwendung und Dokumentation bereit.
 
@@ -181,6 +182,7 @@ A: Im Moment nicht. Fenster schließen beendet den Prozess (bei langen Tabellen 
 ## 📞 Support & Entwicklung
 
 - **Projekt:** GitHub-Repository
+- **Anwenderdoku:** `docs/DOKUMENTATION_ANWENDER.md`
 - **Dokumentation:** `docs/DOKUMENTATION_TECHNIK.md` für Entwickler
 - **Issues/Fehler:** In Repository posten
 
@@ -195,7 +197,7 @@ Im Repository gelten für Markdown-Dateien verbindlich:
 - **MD022**: Vor und nach jeder Überschrift genau eine Leerzeile.
 - **MD032**: Vor und nach Listen genau eine Leerzeile.
 
-Die Regeln sind in `.markdownlint.json` hinterlegt.
+Die Regeln sind in `src/.markdownlint.json` hinterlegt.
 
 ## 🗒️ Änderungsstand
 

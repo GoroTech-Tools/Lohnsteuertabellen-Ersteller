@@ -1,4 +1,4 @@
-# Release v1.1.0: Multi-Year PAP-Parser Support
+# RELEASE_NOTES v1.1.0
 
 **Datum:** 10. Mai 2026  
 **Typ:** Feature Release
