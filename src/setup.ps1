@@ -60,6 +60,22 @@ Write-Host "[$repo] Aktualisiere pip ..."
 if (Test-Path $requirementsFile) {
     Write-Host "[$repo] Installiere Pakete aus src\requirements.txt ..."
     .\.venv\Scripts\python.exe -m pip install -r $requirementsFile -q
+
+    Write-Host "[$repo] Prüfe NumPy/Pandas-Import ..."
+    .\.venv\Scripts\python.exe -c "import numpy, pandas" *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[$repo] NumPy/Pandas fehlerhaft – repariere Installation ..."
+        .\.venv\Scripts\python.exe -m pip install --upgrade --force-reinstall numpy pandas -q
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[$repo] Force-Reinstall fehlgeschlagen, versuche Recovery via --ignore-installed ..."
+            .\.venv\Scripts\python.exe -m pip install --upgrade --ignore-installed numpy pandas -q
+        }
+        .\.venv\Scripts\python.exe -c "import numpy, pandas" *> $null
+        if ($LASTEXITCODE -ne 0) {
+            throw "NumPy/Pandas konnten nicht korrekt importiert werden. Bitte src\setup.ps1 -Force ausführen."
+        }
+    }
+
     Write-Host "[$repo] Fertig. Aktivieren mit: .\.venv\Scripts\Activate.ps1"
 } else {
     Write-Host "[$repo] Keine src\requirements.txt gefunden — .venv angelegt, aber leer."

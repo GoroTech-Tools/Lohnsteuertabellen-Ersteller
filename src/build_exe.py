@@ -89,9 +89,8 @@ def update_markdown_version(file_path: Path, version_text: str, stand_text: str)
     file_path.write_text(content, encoding="utf-8")
 
 
-def regenerate_embedded_docs(readme_file: Path, tech_doc_file: Path, embedded_docs_file: Path) -> None:
-    """Generiere embedded_docs.py aus docs/LIESMICH.TXT und docs/DOKUMENTATION_TECHNIK.md."""
-    readme_b64 = base64.b64encode(readme_file.read_bytes()).decode("ascii")
+def regenerate_embedded_docs(tech_doc_file: Path, embedded_docs_file: Path) -> None:
+    """Generiere embedded_docs.py aus docs/DOKUMENTATION_TECHNIK.md."""
     tech_b64 = base64.b64encode(tech_doc_file.read_bytes()).decode("ascii")
 
     content = f'''# -*- coding: utf-8 -*-
@@ -104,9 +103,6 @@ import base64
 from pathlib import Path
 import tempfile
 
-# LIESMICH.TXT (Anwender-Dokumentation) - jetzt aus docs/
-README_B64 = "{readme_b64}"
-
 # DOKUMENTATION_TECHNIK.md (Entwickler-Dokumentation)
 TECH_DOC_B64 = "{tech_b64}"
 
@@ -115,14 +111,12 @@ def get_embedded_doc(which: str) -> str:
     """Dekodiere eingebettete Dokumentation.
 
     Args:
-        which: 'readme' oder 'tech'
+        which: 'tech' (oder Legacy-Alias 'readme')
 
     Returns:
         Dekodierter Text
     """
-    if which.lower() == 'readme':
-        return base64.b64decode(README_B64).decode('utf-8')
-    elif which.lower() == 'tech':
+    if which.lower() in {'readme', 'tech'}:
         return base64.b64decode(TECH_DOC_B64).decode('utf-8')
     else:
         raise ValueError(f"Unbekannte Dokumentation: {{which}}")
@@ -132,7 +126,7 @@ def get_temp_doc_path(which: str) -> Path:
     """Schreibe Dokumentation in temporäre Datei und gebe Pfad zurück.
 
     Args:
-        which: 'readme' oder 'tech'
+        which: 'tech' (oder Legacy-Alias 'readme')
 
     Returns:
         Path zum temp file
@@ -143,10 +137,7 @@ def get_temp_doc_path(which: str) -> Path:
     temp_dir = Path(tempfile.gettempdir()) / "lohnsteuertabellen_docs"
     temp_dir.mkdir(exist_ok=True)
 
-    if which.lower() == 'readme':
-        temp_file = temp_dir / "LIESMICH.TXT"
-    else:
-        temp_file = temp_dir / "DOKUMENTATION_TECHNIK.md"
+    temp_file = temp_dir / "DOKUMENTATION_TECHNIK.md"
 
     temp_file.write_text(content, encoding='utf-8')
     return temp_file
@@ -251,7 +242,6 @@ def build_exe():
     gui_file = src_dir / "tax_table_gui.py"
     embedded_docs_file = src_dir / "embedded_docs.py"
     icon_file = src_dir / "app_icon.ico"
-    docs_readme_file = docs_dir / "LIESMICH.TXT"
     docs_tech_file = docs_dir / "DOKUMENTATION_TECHNIK.md"
     pap_xml_dir = root_dir / "data" / "pap_xml"
     build_dir = root_dir / "build"
@@ -267,9 +257,8 @@ def build_exe():
         print(f"❌ Fehler: {gui_file} nicht gefunden!")
         return 1
 
-    if not docs_readme_file.exists() or not docs_tech_file.exists():
-        print("❌ Fehler: Dokumentationsdateien fehlen in docs/!")
-        print(f"   Erwartet: {docs_readme_file}")
+    if not docs_tech_file.exists():
+        print("❌ Fehler: Technische Dokumentation fehlt in docs/!")
         print(f"   Erwartet: {docs_tech_file}")
         return 1
 
@@ -282,11 +271,10 @@ def build_exe():
     build_dir.mkdir(parents=True, exist_ok=True)
 
     # Versions- und Stand-Aktualisierung in Doku
-    update_markdown_version(docs_readme_file, version_text, stand_text)
     update_markdown_version(docs_tech_file, version_text, stand_text)
 
     # Embedded Docs aus aktualisierter Doku neu erzeugen
-    regenerate_embedded_docs(docs_readme_file, docs_tech_file, embedded_docs_file)
+    regenerate_embedded_docs(docs_tech_file, embedded_docs_file)
 
     # Version-Resource-Datei für EXE erzeugen
     write_windows_version_file(version_file, version_tuple, version_text, build_stamp)
@@ -324,6 +312,7 @@ def build_exe():
         f"--distpath={dist_dir}",
         f"--workpath={build_dir}",
         f"--specpath={build_dir}",
+        f"--additional-hooks-dir={src_dir / 'pyinstaller_hooks'}",
         f"--version-file={version_file}",
         "--collect-data=pandas",
         "--collect-data=openpyxl",

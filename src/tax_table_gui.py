@@ -157,7 +157,7 @@ class TaxTableGui(tk.Tk):
         help_frame.columnconfigure(0, weight=1)
         help_frame.columnconfigure(1, weight=1)
 
-        user_manual_btn = ttk.Button(help_frame, text="? Anwender-Hilfe", command=self._open_user_manual)
+        user_manual_btn = ttk.Button(help_frame, text="? Dokumentation", command=self._open_user_manual)
         user_manual_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
 
         tech_docs_btn = ttk.Button(help_frame, text="? Technische Doku", command=self._open_tech_docs)
@@ -357,33 +357,8 @@ class TaxTableGui(tk.Tk):
         worker.start()
 
     def _open_user_manual(self) -> None:
-        """Öffnet die Anwender-Dokumentation (LIESMICH.TXT).
-        
-        Versucht zuerst, die eingebettete Dokumentation zu verwenden (für EXE),
-        fällt ansonsten auf Dateisystem zurück (für Entwicklung).
-        """
-        # Priorität 1: Embedded Documentation (für EXE)
-        if EMBEDDED_DOCS_AVAILABLE:
-            try:
-                readme_path = get_temp_doc_path('readme')
-                self._open_doc_file(readme_path)
-                return
-            except Exception:
-                # Fallback zu Dateisystem
-                pass
-
-        # Priorität 2: Dateisystem - ausschließlich docs/LIESMICH.TXT
-        readme_path = self.base_dir.parent / "docs" / "LIESMICH.TXT"
-
-        if not readme_path.exists():
-            messagebox.showwarning(
-                "Dokumentation nicht gefunden",
-                f"LIESMICH.TXT existiert nicht unter:\n  {self.base_dir.parent / 'docs' / 'LIESMICH.TXT'}\n\n" +
-                "Hinweis: Bei der EXE sollte die Dokumentation eingebettet sein."
-            )
-            return
-
-        self._open_doc_file(readme_path)
+        """Öffnet die Dokumentation (Alias auf technische Doku)."""
+        self._open_tech_docs()
 
     def _open_tech_docs(self) -> None:
         """Öffnet die Technische Dokumentation.

@@ -27,16 +27,14 @@ if (-not (Test-Path $buildScript)) {
 }
 
 if (-not $SkipSetup) {
-    if (-not (Test-Path $venvPython)) {
-        if (-not (Test-Path $setupScript)) {
-            throw "Weder .venv noch src\\setup.ps1 gefunden. Erwartet: $venvPython und/oder $setupScript"
-        }
+    if (-not (Test-Path $setupScript)) {
+        throw "src\\setup.ps1 nicht gefunden. Erwartet: $setupScript"
+    }
 
-        Write-Host "[$repo] .venv fehlt — führe src\\setup.ps1 aus ..."
-        & $setupScript
-        if ($LASTEXITCODE -ne 0) {
-            throw "src\\setup.ps1 fehlgeschlagen (Exit-Code $LASTEXITCODE)."
-        }
+    Write-Host "[$repo] Führe src\\setup.ps1 aus ..."
+    & $setupScript
+    if ($LASTEXITCODE -ne 0) {
+        throw "src\\setup.ps1 fehlgeschlagen (Exit-Code $LASTEXITCODE)."
     }
 }
 
