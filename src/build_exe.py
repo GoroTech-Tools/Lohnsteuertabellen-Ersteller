@@ -216,10 +216,11 @@ BUILD_STAMP = "{build_stamp}"
 def create_release_zip(
     root_dir: Path,
     docs_dir: Path,
+    data_dir: Path,
     exe_file: Path,
     version_text: str,
 ) -> Path:
-    """Erstelle ein ZIP-Release mit EXE + docs/ im Projektbasisverzeichnis."""
+    """Erstelle ein ZIP-Release mit EXE + docs/ + data/ im Projektbasisverzeichnis."""
     release_dir = root_dir / "release"
     release_dir.mkdir(parents=True, exist_ok=True)
 
@@ -232,6 +233,12 @@ def create_release_zip(
             if doc_file.is_file():
                 arcname = Path("docs") / doc_file.relative_to(docs_dir)
                 zf.write(doc_file, arcname=str(arcname))
+
+        if data_dir.exists():
+            for data_file in data_dir.rglob("*"):
+                if data_file.is_file():
+                    arcname = Path("data") / data_file.relative_to(data_dir)
+                    zf.write(data_file, arcname=str(arcname))
 
     return zip_file
 
@@ -283,6 +290,7 @@ def build_exe():
     docs_user_file = docs_dir / "DOKUMENTATION_ANWENDER.md"
     docs_tech_file = docs_dir / "DOKUMENTATION_TECHNIK.md"
     pap_xml_dir = root_dir / "data" / "pap_xml"
+    data_dir = root_dir / "data"
     build_dir = root_dir / "build"
     dist_dir = root_dir / "dist"
     version_file = build_dir / "version_info.txt"
@@ -387,7 +395,7 @@ def build_exe():
     if exe_file.exists():
         save_version_state(version_state_file, version_tuple, build_stamp)
         size_mb = exe_file.stat().st_size / (1024 * 1024)
-        zip_file = create_release_zip(root_dir, docs_dir, exe_file, version_text)
+        zip_file = create_release_zip(root_dir, docs_dir, data_dir, exe_file, version_text)
         notes_file = write_release_notes(root_dir / "release", version_text, stand_text, build_stamp, zip_file)
         zip_size_mb = zip_file.stat().st_size / (1024 * 1024)
         print()
