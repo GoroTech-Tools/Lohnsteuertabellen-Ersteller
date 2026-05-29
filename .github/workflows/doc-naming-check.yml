@@ -1,0 +1,16 @@
+name: Dokumentations-Namensstandard
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-doc-naming-uppercase:
+    runs-on: windows-latest
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Doku-Namensstandard prüfen
+        shell: pwsh
+        run: .\tools\check-doc-naming-uppercase.ps1

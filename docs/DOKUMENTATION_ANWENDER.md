@@ -40,6 +40,6 @@ Die Anwendung erzeugt eine Excel-Datei mit:
 
 ---
 
-**Version:** 1.2.0  
+**Version:** 1.2.1  
 **Stand:** 25.05.2026  
 **Autor:** GoroTech
