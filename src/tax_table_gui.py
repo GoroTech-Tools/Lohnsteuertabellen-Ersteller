@@ -11,6 +11,7 @@ Funktionen:
 
 from __future__ import annotations
 
+import argparse
 import sys
 import subprocess
 import threading
@@ -51,6 +52,131 @@ DEFAULT_INCOME_MIN = "1000"
 DEFAULT_INCOME_MAX = "10000"
 DEFAULT_OUTPUT = "."
 AVAILABLE_GENERATORS = get_available_generators()
+
+
+def _resolve_output_path_for_cli(raw_output: str, year: int) -> Path:
+    """CLI-Variante der Ausgabepfad-Auflösung (analog zur GUI-Logik)."""
+    default_filename = get_output_filename(year)
+
+    if raw_output in ("", "."):
+        return Path(".") / default_filename
+
+    path = Path(raw_output).expanduser()
+
+    if path.exists() and path.is_dir():
+        return path / default_filename
+
+    if path.suffix.lower() != ".xlsx" and path.suffix == "":
+        return path.with_suffix(".xlsx")
+
+    return path
+
+
+def _build_cli_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Lohnsteuertabellen-Ersteller (GUI und Headless/CLI)",
+    )
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Tabelle ohne GUI direkt per CLI erzeugen.",
+    )
+    parser.add_argument(
+        "--year",
+        type=int,
+        default=int(DEFAULT_YEAR),
+        help=f"Steuerjahr (unterstützt: {', '.join(str(y) for y in SUPPORTED_YEARS)})",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default=".",
+        help="Ausgabedatei oder Zielordner (.xlsx wird bei Bedarf ergänzt).",
+    )
+    parser.add_argument(
+        "--income-min",
+        type=float,
+        default=float(DEFAULT_INCOME_MIN),
+        help="Minimales Einkommen in EUR.",
+    )
+    parser.add_argument(
+        "--income-max",
+        type=float,
+        default=float(DEFAULT_INCOME_MAX),
+        help="Maximales Einkommen in EUR.",
+    )
+    parser.add_argument(
+        "--step",
+        type=int,
+        default=int(DEFAULT_STEP),
+        help=f"Schrittweite in EUR (erlaubt: {', '.join(str(s) for s in ALLOWED_STEPS)}).",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Minimale Konsolenausgabe im Headless-Modus.",
+    )
+    return parser
+
+
+def _should_run_headless(argv: list[str]) -> bool:
+    cli_switches = {
+        "--headless",
+        "--year",
+        "-o",
+        "--output",
+        "--income-min",
+        "--income-max",
+        "--step",
+        "--quiet",
+    }
+    return any(arg in cli_switches for arg in argv)
+
+
+def _run_headless(args: argparse.Namespace) -> int:
+    year = int(args.year)
+    step = int(args.step)
+    income_min = float(args.income_min)
+    income_max = float(args.income_max)
+
+    if year not in AVAILABLE_GENERATORS:
+        print(f"Fehler: Jahr {year} wird nicht unterstützt.")
+        return 2
+
+    if step not in ALLOWED_STEPS:
+        print(f"Fehler: Ungültige Schrittweite {step}. Erlaubt: {ALLOWED_STEPS}")
+        return 2
+
+    if income_min < 0 or income_max < 0:
+        print("Fehler: Einkommen min/max dürfen nicht negativ sein.")
+        return 2
+
+    if income_max < income_min:
+        print("Fehler: Einkommen max muss >= Einkommen min sein.")
+        return 2
+
+    output_path = _resolve_output_path_for_cli(str(args.output).strip(), year)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    generator = AVAILABLE_GENERATORS[year]
+    if not args.quiet:
+        print(
+            f"Headless-Start: year={year}, step={step}, "
+            f"income=[{income_min}, {income_max}], output={output_path}"
+        )
+
+    raw_df = generator(step=step, income_min=income_min, income_max=income_max)
+    wide_df = build_wide_dataframe(raw_df)
+    write_excel_file(output_path=output_path, wide_df=wide_df, raw_df=raw_df, year=year)
+
+    if not output_path.exists():
+        print("Fehler: Ausgabedatei wurde nicht erstellt.")
+        return 1
+
+    if not args.quiet:
+        print(f"OK: {output_path.resolve()}")
+    return 0
 
 
 class TaxTableGui(tk.Tk):
@@ -432,6 +558,12 @@ class TaxTableGui(tk.Tk):
 
 
 def main() -> int:
+    parser = _build_cli_parser()
+    args = parser.parse_args()
+
+    if args.headless or _should_run_headless(sys.argv[1:]):
+        return _run_headless(args)
+
     app = TaxTableGui()
     app.mainloop()
     return 0

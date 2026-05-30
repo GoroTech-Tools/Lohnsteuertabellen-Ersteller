@@ -133,7 +133,7 @@ def write_excel_file(
         wide_df.to_excel(writer, sheet_name=main_sheet, index=False)
         raw_df.to_excel(writer, sheet_name=raw_sheet, index=False)
     
-    print(f"✓ Excel-Datei geschrieben: {output_path}")
+    print(f"OK: Excel-Datei geschrieben: {output_path}")
 
 
 def main():
@@ -183,11 +183,11 @@ def main():
         income_max=args.income_max,
         step=args.step,
     )
-    print(f"✓ {len(raw_df)} Rohdatensätze")
+    print(f"OK: {len(raw_df)} Rohdatensätze")
     
     print("Strukturiere für Excel...")
     wide_df = build_wide_dataframe(raw_df)
-    print(f"✓ {len(wide_df)} Haupttabelle-Zeilen")
+    print(f"OK: {len(wide_df)} Haupttabelle-Zeilen")
     
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -197,7 +197,7 @@ def main():
     
     print()
     print("=" * 70)
-    print("✓ FERTIG")
+    print("OK: FERTIG")
     print("=" * 70)
     print(f"Ausgabedatei: {output_path.absolute()}")
     

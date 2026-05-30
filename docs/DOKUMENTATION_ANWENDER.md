@@ -11,6 +11,24 @@ Diese Dokumentation richtet sich an Anwenderinnen und Anwender der Anwendung.
 5. Ausgabepfad wählen.
 6. „Tabelle erstellen“ klicken.
 
+### Vollautomatisch / Headless (ohne GUI)
+
+Die EXE kann auch ohne GUI direkt per Kommandozeile ausgeführt werden:
+
+```text
+Lohnsteuertabellen-Ersteller.exe --headless --year 2026 --output .\Lohnsteuer_2026_West_monatlich.xlsx --income-min 1000 --income-max 10000 --step 5
+```
+
+Unterstützte Headless-Parameter:
+
+- `--headless`: Erzwingt CLI-Ausführung ohne GUI
+- `--year`: Steuerjahr (z. B. `2026`)
+- `-o`, `--output`: Ausgabedatei oder Zielordner
+- `--income-min`: Minimales Einkommen in EUR
+- `--income-max`: Maximales Einkommen in EUR
+- `--step`: Schrittweite in EUR (`3`, `5`, `10`, `50`)
+- `--quiet`: Minimale Konsolenausgabe
+
 ## Eingabefelder
 
 | Feld | Bedeutung |
@@ -40,6 +58,6 @@ Die Anwendung erzeugt eine Excel-Datei mit:
 
 ---
 
-**Version:** 1.2.1  
-**Stand:** 25.05.2026  
+**Version:** 1.2.4  
+**Stand:** 30.05.2026  
 **Autor:** GoroTech
