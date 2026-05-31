@@ -4,6 +4,26 @@
 **Quelle Tarifformeln:** BMF-Programmablaufplan 2026 (Anlage 2), veröffentlicht 12.11.2025  
 **Gültig ab:** 1. Januar 2026
 
+> ⚠️ **Wichtiger Hinweis:** Diese Implementierung ist eine praxisnahe Näherung für den internen Einsatz.
+> Die erzeugten Werte sind nicht als offizielle/amtliche Lohnsteuertabellen zu verstehen.
+> Für verbindliche Fälle gelten ausschließlich die offiziellen BMF-/PAP-Quellen.
+
+## 0. Berechnungsablauf (Übersicht)
+
+```mermaid
+flowchart TD
+    A[Brutto Eingabe] --> B[Steuerklasse und KFB]
+    B --> C[Ermittlung zvE]
+    C --> D[LSTJAHR ohne KFB]
+    C --> E[JBMG mit KFB]
+    D --> F[Lohnsteuer Monat]
+    E --> G[SolZ und Kirchensteuer]
+    F --> H[Tabellenexport]
+    G --> H
+```
+
+![Berechnungsablauf](diagramme/kalkulation_berechnungsablauf.svg)
+
 ---
 
 ## 1. Einkommensteuertarif (§ 32a Abs. 1 EStG 2026)

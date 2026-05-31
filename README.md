@@ -2,6 +2,11 @@
 
 Ein benutzerfreundliches Tool zum Erstellen von Lohnsteuertabellen nach aktuellen BMF-Tarifformeln. Mit grafischer Oberfläche einfach Tabellen mit individuellen Parametern erzeugen.
 
+## ⚠️ Wichtiger Hinweis (nicht amtlich)
+
+Die erzeugten Lohnsteuertabellen enthalten **Näherungswerte** und sind **keine offiziellen amtlichen Tabellen**.
+Für rechtsverbindliche oder prüfungsrelevante Entscheidungen sind immer die offiziellen Quellen (BMF/PAP und zuständige Stellen) maßgeblich.
+
 ## ✨ Funktionen
 
 - **Schlichte GUI** – ohne unnötige Komplexität
@@ -23,6 +28,19 @@ Ein benutzerfreundliches Tool zum Erstellen von Lohnsteuertabellen nach aktuelle
 | **Speicherort** | `.` (aktuell) | Zielverzeichnis oder Dateiname |
 
 ## 🚀 Quickstart
+
+### Ablaufübersicht
+
+```mermaid
+flowchart LR
+   A[Start Anwendung] --> B[Parameter setzen]
+   B --> C[Validierung]
+   C --> D[Steuerberechnung]
+   D --> E[Excel Export]
+   E --> F[Prüfung im Zielsystem]
+```
+
+![Ablaufübersicht](docs/diagramme/anwender_ablauf.svg)
 
 ### Mit GUI (empfohlen)
 
@@ -174,7 +192,7 @@ py -3 -m available_tax_years --check 2027
 ```
 
 **F: Ist die Berechnung amtlich?**  
-A: Die Formeln folgen den BMF-Parametern, bilden aber eine vereinfachte Annäherung. Für offizielle Zwecke: BMF-Originalquellen konsultieren.
+A: Nein. Die Formeln folgen den BMF-Parametern, bilden aber eine vereinfachte Annäherung. Die Tabellen enthalten Näherungswerte und sind nicht offiziell. Für amtliche Zwecke ausschließlich BMF-Originalquellen nutzen.
 
 **F: Kann ich eine laufende Generierung abbrechen?**  
 A: Im Moment nicht. Fenster schließen beendet den Prozess (bei langen Tabellen ggf. zu langsam).

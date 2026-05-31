@@ -1,0 +1,6 @@
+flowchart LR
+    A[GUI tax_table_gui.py] --> B[available_tax_years.py]
+    B --> C[generate_tax_tables_universal.py]
+    C --> D[lohnsteuer_integration.py]
+    D --> E[data/pap_xml]
+    C --> F[Excel Export openpyxl]

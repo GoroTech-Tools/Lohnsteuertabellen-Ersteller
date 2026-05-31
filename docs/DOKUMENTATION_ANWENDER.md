@@ -2,6 +2,24 @@
 
 Diese Dokumentation richtet sich an Anwenderinnen und Anwender der Anwendung.
 
+## ⚠️ Wichtiger Hinweis zur Verbindlichkeit
+
+Die erzeugten Lohnsteuertabellen enthalten **Näherungswerte** und sind **nicht offiziell/amtlich**.
+Für rechtsverbindliche Berechnungen sind immer die offiziellen Veröffentlichungen und Rechenwege maßgeblich.
+
+## Ablauf auf einen Blick
+
+```mermaid
+flowchart LR
+    A[Anwendung starten] --> B[Jahr und Schrittweite wählen]
+    B --> C[Einkommensbereich setzen]
+    C --> D[Ausgabepfad wählen]
+    D --> E[Tabelle erstellen]
+    E --> F[Excel Datei prüfen]
+```
+
+![Ablauf Anwenderdokumentation](diagramme/anwender_ablauf.svg)
+
 ## Schnellstart
 
 1. Anwendung starten (`tax_table_gui.py` oder EXE).
@@ -48,6 +66,7 @@ Die Anwendung erzeugt eine Excel-Datei mit:
 ## Hinweise
 
 - Die Berechnung orientiert sich an BMF/PAP-Daten.
+- Die Ergebnisse sind Näherungswerte und nicht als amtliche Tabellen zu verstehen.
 - Für amtliche Einzelfälle immer die offiziellen Quellen prüfen.
 - Bei ungültigen Eingaben zeigt die Anwendung eine klare Fehlermeldung.
 

@@ -1,5 +1,35 @@
 # Technische Dokumentation – Lohnsteuertabellen-Ersteller
 
+> ⚠️ **Hinweis zur fachlichen Einordnung:**
+> Die erzeugten Tabellenwerte sind Näherungswerte und nicht amtlich.
+> Diese Dokumentation beschreibt die technische Implementierung des Tools, nicht eine offizielle BMF-Berechnungsinstanz.
+
+## 🧭 Architektur-Überblick
+
+```mermaid
+flowchart LR
+  A[GUI tax_table_gui.py] --> B[available_tax_years.py]
+  B --> C[generate_tax_tables_universal.py]
+  C --> D[lohnsteuer_integration.py]
+  D --> E[data/pap_xml]
+  C --> F[Excel Export openpyxl]
+```
+
+![Technik Architekturübersicht](diagramme/technik_architektur_ueberblick.svg)
+
+## 🔁 Build- und Release-Fluss
+
+```mermaid
+flowchart LR
+  A[Quellcode und Doku] --> B[build.ps1]
+  B --> C[src/build_exe.py]
+  C --> D[dist EXE]
+  C --> E[release ZIP]
+  E --> F[GitHub Release]
+```
+
+![Technik Build-Release-Fluss](diagramme/technik_build_release_fluss.svg)
+
 ## 📐 Systemarchitektur
 
 ```bash

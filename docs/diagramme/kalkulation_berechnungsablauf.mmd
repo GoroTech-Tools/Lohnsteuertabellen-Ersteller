@@ -1,0 +1,9 @@
+flowchart TD
+    A[Brutto Eingabe] --> B[Steuerklasse und KFB]
+    B --> C[Ermittlung zvE]
+    C --> D[LSTJAHR ohne KFB]
+    C --> E[JBMG mit KFB]
+    D --> F[Lohnsteuer Monat]
+    E --> G[SolZ und Kirchensteuer]
+    F --> H[Tabellenexport]
+    G --> H

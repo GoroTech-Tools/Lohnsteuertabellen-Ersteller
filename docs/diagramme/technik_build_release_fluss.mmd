@@ -1,0 +1,6 @@
+flowchart LR
+    A[Quellcode und Doku] --> B[build.ps1]
+    B --> C[src/build_exe.py]
+    C --> D[dist EXE]
+    C --> E[release ZIP]
+    E --> F[GitHub Release]
