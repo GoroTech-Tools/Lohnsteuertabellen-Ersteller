@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tagname für Release (z. B. v1.2.6)'
+        required: true
+        type: string
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Release-Variablen bestimmen
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+
+          VERSION_NO_V="${TAG#v}"
+          VERSION_US="${VERSION_NO_V//./_}"
+          ZIP_FILE="release/Lohnsteuertabellen-Ersteller_${VERSION_NO_V}.zip"
+          NOTES_FILE="release/RELEASE_NOTES_${VERSION_US}.md"
+
+          if [[ -f "$ZIP_FILE" ]]; then
+            ZIP_EXISTS=true
+          else
+            ZIP_EXISTS=false
+          fi
+
+          if [[ -f "$NOTES_FILE" ]]; then
+            NOTES_EXISTS=true
+          else
+            NOTES_EXISTS=false
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version_no_v=$VERSION_NO_V" >> "$GITHUB_OUTPUT"
+          echo "zip_file=$ZIP_FILE" >> "$GITHUB_OUTPUT"
+          echo "notes_file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+          echo "zip_exists=$ZIP_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "notes_exists=$NOTES_EXISTS" >> "$GITHUB_OUTPUT"
+
+      - name: GitHub-Release erstellen/aktualisieren
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.vars.outputs.tag }}"
+          TITLE="Lohnsteuertabellen-Ersteller ${TAG}"
+          NOTES_FILE="${{ steps.vars.outputs.notes_file }}"
+          ZIP_FILE="${{ steps.vars.outputs.zip_file }}"
+          NOTES_EXISTS="${{ steps.vars.outputs.notes_exists }}"
+          ZIP_EXISTS="${{ steps.vars.outputs.zip_exists }}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG existiert bereits – Titel/Notes werden aktualisiert."
+            if [[ "$NOTES_EXISTS" == "true" ]]; then
+              gh release edit "$TAG" --title "$TITLE" --notes-file "$NOTES_FILE"
+            else
+              gh release edit "$TAG" --title "$TITLE" --notes "Automatisch veröffentlicht für $TAG."
+            fi
+          else
+            echo "Release $TAG wird neu erstellt."
+            if [[ "$NOTES_EXISTS" == "true" ]]; then
+              gh release create "$TAG" --title "$TITLE" --notes-file "$NOTES_FILE"
+            else
+              gh release create "$TAG" --title "$TITLE" --notes "Automatisch veröffentlicht für $TAG."
+            fi
+          fi
+
+          if [[ "$ZIP_EXISTS" == "true" ]]; then
+            echo "ZIP-Artefakt gefunden – Upload zu $TAG."
+            gh release upload "$TAG" "$ZIP_FILE" --clobber
+          else
+            echo "Kein ZIP-Artefakt gefunden ($ZIP_FILE). Upload wird übersprungen."
+          fi
