@@ -95,3 +95,23 @@ jobs:
           else
             echo "Kein ZIP-Artefakt gefunden ($ZIP_FILE). Upload wird übersprungen."
           fi
+
+      - name: Guardrail – Release-Titel normalisieren
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh release list --limit 100 --json tagName,name \
+            | jq -c '.[]' \
+            | while read -r release; do
+                TAG="$(echo "$release" | jq -r '.tagName')"
+                NAME="$(echo "$release" | jq -r '.name // ""')"
+
+                if [[ "$NAME" =~ ^Release([[:space:]]+|$) ]]; then
+                  NEW_TITLE="Lohnsteuertabellen-Ersteller ${TAG}"
+                  echo "Guardrail: Korrigiere Titel '$NAME' -> '$NEW_TITLE'"
+                  gh release edit "$TAG" --title "$NEW_TITLE"
+                fi
+              done
