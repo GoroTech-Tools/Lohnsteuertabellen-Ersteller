@@ -737,8 +737,8 @@ Das erzeugte Release-ZIP in `release/` enthält automatisch die aktualisierte Do
 
 ---
 
-**Version:** 1.2.4  
-**Stand:** 30.05.2026  
+**Version:** 1.2.5  
+**Stand:** 31.05.2026  
 **Autor:** GoroTech  
 **Lizenz:** Frei – Nutzung, Weitergabe und Anpassung ohne Einschränkungen gestattet.  
 **Zielentwickler:** Python 3.8+

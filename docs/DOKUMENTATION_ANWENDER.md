@@ -77,6 +77,6 @@ Die Anwendung erzeugt eine Excel-Datei mit:
 
 ---
 
-**Version:** 1.2.4  
-**Stand:** 30.05.2026  
+**Version:** 1.2.5  
+**Stand:** 31.05.2026  
 **Autor:** GoroTech
