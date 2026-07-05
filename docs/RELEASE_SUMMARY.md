@@ -151,7 +151,7 @@ Nur Jahr 2026
 
 ## 📦 GitHub Release
 
-**Tag:** <https://github.com/TomGorontzy/Lohnsteuertabellen-Ersteller/releases/tag/v1.1.1>  
+**Tag:** <https://github.com/GoroTech-Tools/Lohnsteuertabellen-Ersteller/releases/tag/v1.1.1>  
 **ZIP:** `Lohnsteuertabellen-Ersteller_1.1.1.zip`  
 **Size:** ~5.55 MiB (mit PAP XML)
 
